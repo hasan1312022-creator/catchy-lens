@@ -10,7 +10,10 @@ function msg(t,bad){var d=document.createElement('div');d.className='msg'+(bad?'
 function save(){try{sessionStorage.setItem('cl-adm',JSON.stringify({t:S.tok,r:S.ref,u:S.uid}))}catch(e){}}
 function load(){try{var o=JSON.parse(sessionStorage.getItem('cl-adm')||'null');if(o){S.tok=o.t;S.ref=o.r;S.uid=o.u}}catch(e){}}
 function hdr(extra){var h={apikey:KEY,Authorization:'Bearer '+(S.tok||KEY)};for(var k in (extra||{}))h[k]=extra[k];return h}
+var EMB=/[?&]embed=1/.test(location.search)&&window.parent!==window;
+function ptok(){return Promise.resolve(window.parent.__clTok()).then(function(o){if(!o||!o.t)throw new Error('no-session');S.tok=o.t;S.uid=o.u})}
 function refresh(){
+ if(EMB)return ptok();
  if(!S.ref)return Promise.reject(new Error('no-ref'));
  return fetch(URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:S.ref})})
   .then(function(r){if(!r.ok)throw new Error('refresh');return r.json()}).then(function(j){S.tok=j.access_token;S.ref=j.refresh_token;save()});
@@ -50,9 +53,9 @@ function loadAll(){
 }
 /* ---------- shell ---------- */
 function render(){
- root.innerHTML='<div class="bar"><b>Catchy Lens — لوحة التحكم</b><span class="sp"></span><button id="out">خروج</button></div><div class="tabs" role="tablist">'
+ root.innerHTML=(EMB?'':'<div class="bar"><b>Catchy Lens — لوحة التحكم</b><span class="sp"></span><button id="out">خروج</button></div>')+'<div class="tabs" role="tablist">'
   +[['products','المنتجات'],['settings','الإعدادات'],['home','الرئيسية'],['pages','الصفحات'],['offers','العروض'],['coupons','الكوبونات']].map(function(t){return '<button role="tab" data-tab="'+t[0]+'" aria-selected="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('')+'</div><main id="m"></main>';
- document.getElementById('out').onclick=function(){S.tok=null;S.ref=null;save();loginView()};
+ var ob=document.getElementById('out');if(ob)ob.onclick=function(){S.tok=null;S.ref=null;save();loginView()};
  [].forEach.call(root.querySelectorAll('[data-tab]'),function(b){b.onclick=function(){S.tab=b.dataset.tab;render()}});
  ({products:productsView,settings:settingsView,pages:function(){pagesView()},home:homeView,offers:offersView,coupons:couponsView})[S.tab]();
 }
@@ -308,6 +311,6 @@ function offerEditor(id){
  };
 }
 /* ---------- boot ---------- */
-load();
-if(S.tok&&S.uid)start();else loginView();
+if(EMB)ptok().then(start).catch(function(){root.innerHTML='<p style="padding:20px">سجّلي دخول في سيستم الاوردرات الأول.</p>'});
+else{load();if(S.tok&&S.uid)start();else loginView()}
 })();
