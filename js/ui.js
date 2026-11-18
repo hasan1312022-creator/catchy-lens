@@ -8,7 +8,8 @@ function img(file,alt,extra){var d=CL.dims[file]||[];return '<img src="'+A(file)
 var NAV=[['الرئيسية','home'],['العدسات','lenses'],['المحاليل والتعقيم','care'],['الإكسسوارات','accessories'],['اعثري على عدستك','quiz'],['تتبعي طلبك','tracking'],['العروض','offers'],['جرّبي اللون','tryon']];
 CL.ui={
  img:img,
- init:function(s,p){S=s||{};PRODUCTS=p||[]},
+ init:function(s,p){S=s||{};PRODUCTS=p||[];
+  try{if(S.wheel&&S.wheel.on&&!/(cart|order|admin|extra)\.html/.test(location.pathname)&&!window.__NOWHEEL){var sc=document.createElement('script');sc.src=CL.config.base+'js/wheel.js';sc.onload=function(){CL.wheel.start(S.wheel)};document.head.appendChild(sc)}}catch(x){}},
  trust:function(){return '<div class="trust">'+[['eye','عدسات أصلية'],['truck','شحن سريع'],['bag','دفع عند الاستلام'],['return','استرجاع']].map(function(x){return '<span>'+I(x[0])+x[1]+'</span>'}).join('')+'</div>'},
  header:function(){
   var n=CL.cart.count();

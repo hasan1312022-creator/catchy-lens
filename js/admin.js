@@ -49,15 +49,15 @@ function loadAll(){
   api('/rest/v1/store_settings?select=key,value'),
   api('/rest/v1/store_coupons?select=*&order=code.asc'),
   api('/rest/v1/store_offers?select=*&order=sort.asc,id.asc').catch(function(){return []})
- ]).then(function(r){S.offers=r[3]||[];S.products=r[0]||[];S.settings={};(r[1]||[]).forEach(function(x){S.settings[x.key]=x.value});S.coupons=r[2]||[]});
+ ]).then(function(r){S.offers=r[3]||[];S.products=r[0]||[];S.settings={};(r[1]||[]).forEach(function(x){S.settings[x.key]=x.value});S.coupons=(r[2]||[]).filter(function(c){return c.source!=='wheel'})});
 }
 /* ---------- shell ---------- */
 function render(){
  root.innerHTML=(EMB?'':'<div class="bar"><b>Catchy Lens — لوحة التحكم</b><span class="sp"></span><button id="out">خروج</button></div>')+'<div class="tabs" role="tablist">'
-  +[['products','المنتجات'],['settings','الإعدادات'],['home','الرئيسية'],['pages','الصفحات'],['offers','العروض'],['coupons','الكوبونات']].map(function(t){return '<button role="tab" data-tab="'+t[0]+'" aria-selected="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('')+'</div><main id="m"></main>';
+  +[['products','المنتجات'],['settings','الإعدادات'],['home','الرئيسية'],['wheel','العجلة'],['pages','الصفحات'],['offers','العروض'],['coupons','الكوبونات']].map(function(t){return '<button role="tab" data-tab="'+t[0]+'" aria-selected="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('')+'</div><main id="m"></main>';
  var ob=document.getElementById('out');if(ob)ob.onclick=function(){S.tok=null;S.ref=null;save();loginView()};
  [].forEach.call(root.querySelectorAll('[data-tab]'),function(b){b.onclick=function(){S.tab=b.dataset.tab;render()}});
- ({products:productsView,settings:settingsView,pages:function(){pagesView()},home:homeView,offers:offersView,coupons:couponsView})[S.tab]();
+ ({products:productsView,settings:settingsView,pages:function(){pagesView()},home:homeView,wheel:wheelView,offers:offersView,coupons:couponsView})[S.tab]();
 }
 /* ---------- products ---------- */
 function stockOf(p){return (p.store_variants||[]).reduce(function(n,v){return n+((v.stock&&v.stock.qty)||0)},0)}
@@ -202,6 +202,63 @@ function homeView(){
  };
  paint();
 }
+/* ---------- wheel ---------- */
+var WT=[['percent','خصم نسبة %'],['amount','خصم مبلغ (ج.م)'],['shipping','شحن مجاني'],['gift','هدية من المخزون'],['none','حظ أوفر (مفيش جايزة)']];
+function wvariants(){var o=[];(S.products||[]).forEach(function(p){(p.store_variants||[]).forEach(function(v){o.push([v.id,p.name+' — '+(v.color_label||'')])})});return o}
+function wheelView(){
+ var m=document.getElementById('m'),W=JSON.parse(JSON.stringify(S.settings.wheel||{on:false,title:'',delay:6,prizes:[
+  {label:'خصم 10%',type:'percent',value:10,days:14,weight:20},{label:'شحن مجاني',type:'shipping',days:14,weight:25},{label:'حظ أوفر',type:'none',weight:35},{label:'خصم 50 جنيه',type:'amount',value:50,days:14,weight:20}]}));
+ W.prizes=W.prizes||[];
+ function paint(sp){
+  var tot=W.prizes.reduce(function(a,p){return a+(+p.weight||0)},0),vs=wvariants();
+  var h='<h2>عجلة الجوايز</h2><p class="hint" style="max-width:780px;color:#6a5662">العجلة بتظهر للزائرة مرة واحدة كل رقم موبايل. السيرفر هو اللي بيختار الجايزة حسب "الوزن"، والكوبون بيتولّد مربوط برقمها ولاستخدام واحد. الهدايا بتخرج من المخزون، ولو الهدية خلصت بتتشال من العجلة تلقائي.</p><div class="card" style="display:grid;gap:12px;max-width:900px">'
+  +'<label><input type="checkbox" id="w-on"'+(W.on?' checked':'')+'> تشغيل العجلة في الموقع</label>'
+  +'<label>عنوان النافذة<input id="w-title" maxlength="60" value="'+esc(W.title||'')+'" placeholder="لفّي العجلة واكسبي جايزة"></label>'
+  +'<label>تظهر بعد كام ثانية<input id="w-delay" type="number" min="2" max="60" value="'+esc(W.delay||6)+'" style="max-width:120px"></label>'
+  +'<div class="tw"><table><thead><tr><th>الاسم على العجلة</th><th>النوع</th><th>القيمة</th><th>أقل إجمالي</th><th>صلاحية (يوم)</th><th>الوزن</th><th>الاحتمال</th><th></th></tr></thead><tbody>'
+  +W.prizes.map(function(p,i){
+    var isv=p.type==='percent'||p.type==='amount',g=p.type==='gift';
+    return '<tr><td><input data-pz="'+i+'.label" value="'+esc(p.label||'')+'" maxlength="30"></td><td><select data-pz="'+i+'.type">'+opts(WT,p.type)+'</select></td>'
+     +'<td>'+(isv?'<input data-pz="'+i+'.value" type="number" min="1" value="'+esc(p.value||'')+'" style="width:80px">':g?'<select data-pz="'+i+'.gift_variant_id"><option value="">اختاري الهدية</option>'+vs.map(function(v){return '<option value="'+v[0]+'"'+(+p.gift_variant_id===v[0]?' selected':'')+'>'+esc(v[1])+'</option>'}).join('')+'</select>':'—')+'</td>'
+     +'<td>'+(p.type==='none'?'—':'<input data-pz="'+i+'.min_total" type="number" min="0" value="'+esc(p.min_total||0)+'" style="width:80px">')+'</td>'
+     +'<td>'+(p.type==='none'?'—':'<input data-pz="'+i+'.days" type="number" min="1" value="'+esc(p.days||14)+'" style="width:70px">')+'</td>'
+     +'<td><input data-pz="'+i+'.weight" type="number" min="0" value="'+esc(p.weight==null?10:p.weight)+'" style="width:70px"></td><td><b>'+(tot?Math.round((+p.weight||0)/tot*100):0)+'%</b></td>'
+     +'<td><button type="button" class="btn sm alt" data-prm="'+i+'">حذف</button></td></tr>'}).join('')
+  +'</tbody></table></div>'
+  +(W.prizes.length<10?'<button type="button" class="btn alt" id="w-add" style="justify-self:start">+ إضافة جايزة</button>':'')
+  +'<div style="display:flex;gap:10px"><button class="btn" id="w-save">حفظ العجلة</button></div></div>'
+  +'<h3 style="margin-top:24px">اللي لعبوا ('+(sp?sp.length:'...')+')</h3><div id="w-spins">'+(sp?spinsTable(sp):'جاري التحميل...')+'</div>';
+  m.innerHTML=h;
+ }
+ function spinsTable(sp){
+  if(!sp.length)return '<p class="muted">لسه محدش لعب.</p>';
+  return '<p><button class="btn sm alt" id="w-csv">تنزيل الأرقام (CSV)</button></p><div class="tw"><table><thead><tr><th>الرقم</th><th>الجايزة</th><th>الكوبون</th><th>اتستخدم؟</th><th>التاريخ</th></tr></thead><tbody>'
+   +sp.map(function(r){return '<tr><td dir="ltr">'+esc(r.phone)+'</td><td>'+esc(r.prize_label)+'</td><td dir="ltr">'+esc(r.coupon||'—')+'</td><td>'+(r.coupon?(S.wc&&S.wc[r.coupon]?'<span class="tag on">اتستخدم</span>':'<span class="tag off">لسه</span>'):'—')+'</td><td>'+esc((r.created_at||'').slice(0,10))+'</td></tr>'}).join('')+'</tbody></table></div>';
+ }
+ m.onchange=function(ev){
+  var t=ev.target;
+  if(t.id==='w-on')W.on=t.checked;else if(t.id==='w-title')W.title=t.value.trim();else if(t.id==='w-delay')W.delay=+t.value||6;
+  else if(t.dataset.pz){var a=t.dataset.pz.split('.'),p=W.prizes[+a[0]];p[a[1]]=(a[1]==='label'||a[1]==='type')?t.value:(t.value===''?'':+t.value);if(a[1]==='type'||a[1]==='weight')paint(S._sp)}
+ };
+ m.onclick=function(ev){
+  var t=ev.target.closest('button');if(!t)return;
+  if(t.id==='w-add'){W.prizes.push({label:'',type:'percent',value:10,days:14,weight:10});paint(S._sp)}
+  else if(t.dataset.prm!=null){if(W.prizes.length<=2)return msg('لازم جايزتين على الأقل.',true);W.prizes.splice(+t.dataset.prm,1);paint(S._sp)}
+  else if(t.id==='w-csv'){var rows=['phone,prize,coupon,date'].concat((S._sp||[]).map(function(r){return [r.phone,'"'+(r.prize_label||'')+'"',r.coupon||'',(r.created_at||'').slice(0,10)].join(',')}));var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+rows.join('\n')],{type:'text/csv;charset=utf-8'}));a.download='wheel-spins.csv';a.click()}
+  else if(t.id==='w-save'){
+   var bad=W.prizes.some(function(p){return !String(p.label||'').trim()||(p.type==='gift'&&!p.gift_variant_id)||((p.type==='percent'||p.type==='amount')&&!(p.value>0))||(p.type==='percent'&&p.value>100)});
+   if(bad)return msg('كمّلي الاسم والقيمة والهدية لكل جايزة (والنسبة لازم تكون 100 أو أقل).',true);
+   if(!W.prizes.some(function(p){return (+p.weight||0)>0}))return msg('لازم جايزة واحدة على الأقل وزنها أكبر من صفر.',true);
+   W.prizes.forEach(function(p){p.label=String(p.label).trim()});
+   t.disabled=true;api('/rest/v1/store_settings?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:[{key:'wheel',value:W,public:true}]}).then(function(){S.settings.wheel=JSON.parse(JSON.stringify(W));msg('اتحفظت العجلة')}).catch(function(e){msg('ما اتحفظش: '+e.message,true)}).then(function(){t.disabled=false});
+  }
+ };
+ paint(S._sp);
+ Promise.all([api('/rest/v1/wheel_spins?select=*&order=created_at.desc&limit=500').catch(function(){return []}),api('/rest/v1/store_coupons?select=code,used&source=eq.wheel&limit=1000').catch(function(){return []})]).then(function(r){
+  S._sp=r[0]||[];S.wc={};(r[1]||[]).forEach(function(c){if(c.used>0)S.wc[c.code]=1});
+  if(document.getElementById('w-spins')){var h=document.querySelector('#m h3');if(h)h.textContent='اللي لعبوا ('+S._sp.length+')';document.getElementById('w-spins').innerHTML=spinsTable(S._sp)}
+ });
+}
 /* ---------- pages ---------- */
 var PG=[['about','من نحن'],['shipping','الشحن والتوصيل'],['returns','الاستبدال والاسترجاع'],['faq','الأسئلة الشائعة'],['privacy','سياسة الخصوصية'],['terms','الشروط والأحكام'],['contact','تواصلي معانا']];
 function pagesView(sel){
@@ -235,7 +292,7 @@ function settingsView(){
 function couponsView(){
  var m=document.getElementById('m');
  m.innerHTML='<h2>الكوبونات</h2><form class="card grid" id="cf"><label>الكود<input name="code" required dir="ltr" style="text-transform:uppercase" maxlength="30"></label><label>النوع<select name="kind"><option value="percent">نسبة %</option><option value="fixed">مبلغ ثابت</option></select></label><label>القيمة<input name="value" type="number" min="1" required></label><label>أقل إجمالي للطلب<input name="min_total" type="number" min="0" value="0"></label><label>أقصى عدد استخدامات (فاضي = مفتوح)<input name="max_uses" type="number" min="1"></label><label>ينتهي في (اختياري)<input name="expires_at" type="date"></label><div style="display:flex;align-items:end"><button class="btn" type="submit">إضافة كوبون</button></div></form>'
-  +'<div class="tw"><table><thead><tr><th>الكود</th><th>الخصم</th><th>أقل إجمالي</th><th>الاستخدام</th><th>ينتهي</th><th>الحالة</th><th></th></tr></thead><tbody>'+(S.coupons.map(function(c){return '<tr><td dir="ltr"><b>'+esc(c.code)+'</b></td><td>'+(c.kind==='percent'?esc(c.value)+'%':esc(c.value)+' ج.م')+'</td><td>'+esc(c.min_total)+'</td><td>'+esc(c.used)+(c.max_uses?' / '+esc(c.max_uses):'')+'</td><td>'+(c.expires_at?esc(c.expires_at.slice(0,10)):'—')+'</td><td><span class="tag '+(c.active?'on':'off')+'">'+(c.active?'شغال':'موقوف')+'</span></td><td><button class="btn sm alt" data-tg="'+esc(c.code)+'">'+(c.active?'إيقاف':'تشغيل')+'</button> <button class="btn sm alt" data-dl="'+esc(c.code)+'">حذف</button></td></tr>'}).join('')||'<tr><td colspan="7" style="text-align:center;padding:20px">مفيش كوبونات.</td></tr>')+'</tbody></table></div>';
+  +'<div class="tw"><table><thead><tr><th>الكود</th><th>الخصم</th><th>أقل إجمالي</th><th>الاستخدام</th><th>ينتهي</th><th>الحالة</th><th></th></tr></thead><tbody>'+(S.coupons.map(function(c){return '<tr><td dir="ltr"><b>'+esc(c.code)+'</b></td><td>'+(c.kind==='percent'?esc(c.value)+'%':c.kind==='shipping'?'شحن مجاني':c.kind==='gift'?'هدية':esc(c.value)+' ج.م')+'</td><td>'+esc(c.min_total)+'</td><td>'+esc(c.used)+(c.max_uses?' / '+esc(c.max_uses):'')+'</td><td>'+(c.expires_at?esc(c.expires_at.slice(0,10)):'—')+'</td><td><span class="tag '+(c.active?'on':'off')+'">'+(c.active?'شغال':'موقوف')+'</span></td><td><button class="btn sm alt" data-tg="'+esc(c.code)+'">'+(c.active?'إيقاف':'تشغيل')+'</button> <button class="btn sm alt" data-dl="'+esc(c.code)+'">حذف</button></td></tr>'}).join('')||'<tr><td colspan="7" style="text-align:center;padding:20px">مفيش كوبونات.</td></tr>')+'</tbody></table></div>';
  document.getElementById('cf').onsubmit=function(ev){
   ev.preventDefault();var f=ev.target,b={code:f.code.value.trim().toUpperCase(),kind:f.kind.value,value:+f.value.value,min_total:+f.min_total.value||0,max_uses:f.max_uses.value?+f.max_uses.value:null,expires_at:f.expires_at.value?f.expires_at.value+'T23:59:59+02:00':null,active:true};
   if(b.kind==='percent'&&b.value>100)return msg('النسبة لازم تكون 100 أو أقل.',true);

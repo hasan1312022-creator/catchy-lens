@@ -1,5 +1,6 @@
 (function(){
 var CL=window.CL,U=CL.url,I=CL.icon,e=CL.esc,A=CL.asset;
+function savedCoupon(){var c=CL.store.get('cl-coupon',null);return c&&c.code?c.code:''}
 var MSG={power_out:'درجة القوة المطلوبة مش متاحة حاليًا في اللون ده. غيّري الدرجة أو اللون وجرّبي تاني.',gift_required:'اختاري لون العدسة الهدية من العرض.',bad_gift:'العدسة الهدية دي مش متاحة في العرض، اختاري غيرها.',bad_phone:'رقم الموبايل غير صحيح، لازم يبدأ بـ 01 ويكون 11 رقم.',bad_name:'من فضلك اكتبي الاسم بشكل صحيح.',bad_address:'من فضلك اكتبي العنوان بالتفصيل (8 حروف على الأقل).',bad_notes:'الملاحظات طويلة جداً.',bad_zone:'من فضلك اختاري المنطقة من القائمة.',bad_lines:'السلة فاضية أو فيها عدد كبير من المنتجات.',bad_qty:'الكمية غير صحيحة.',bad_variant:'أحد المنتجات لم يعد متاحاً. حدّثي السلة وحاولي تاني.',bad_power:'قوة النظر غير صحيحة.',bad_coupon:'كود الخصم غير صالح.',too_many:'عملتي طلبات كتير في وقت قصير. حاولي بعد شوية.',server:'حصلت مشكلة، حاولي تاني بعد شوية.'};
 var S={},P=[],Z=[],O=[],busy=false;
 function evl(){return CL.evalOffers(lines(),O,P)}
@@ -49,7 +50,7 @@ function render(){
   +'<label>المنطقة<input name="zone" list="zl" autocomplete="off" placeholder="اكتبي أو اختاري المنطقة" required><datalist id="zl">'+Z.map(function(z){return '<option value="'+e(z.name)+'">'}).join('')+'</datalist></label>'
   +'<label>العنوان بالتفصيل<textarea name="address" rows="3" required maxlength="400" placeholder="الشارع، رقم العمارة، الدور، علامة مميزة"></textarea></label>'
   +'<label>ملاحظات (اختياري)<textarea name="notes" rows="2" maxlength="500"></textarea></label>'
-  +'<label>كود خصم (اختياري)<input name="coupon" autocomplete="off" dir="ltr" style="text-transform:uppercase"></label>'
+  +'<label>كود خصم (اختياري)<input name="coupon" autocomplete="off" dir="ltr" style="text-transform:uppercase" value="'+e(savedCoupon())+'"></label>'
   +'<input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp">'
   +'<div id="offerbox">'+offerBox()+'</div><div id="tot">'+totals()+'</div><p class="err" role="alert" id="er" hidden></p>'
   +'<button class="btn buybtn" type="submit"'+(okAny?'':' disabled')+'>تأكيد الطلب</button><p class="note">هنكلمك على الموبايل لتأكيد الطلب قبل الشحن'+(S.prepTime?'، والتجهيز '+e(S.prepTime):'')+'.</p></form></aside></div></main>'+foot;
@@ -78,7 +79,7 @@ function submit(ev){
  CL.data.order(payload).then(function(r){
   if(r&&r.ok){CL.store.set('cl-contact',{customer:payload.customer,phone:ph,address:payload.address});
    CL.store.set('cl-last',{id:r.order.order_id,phone:ph,total:r.order.total,fee:r.order.ship_fee,supplier:!!r.order.needs_supplier,offer:r.order.offer||'',gift:r.order.gift||''});
-   CL.store.set('cl-cart',[]);location.href='order.html?id='+encodeURIComponent(r.order.order_id)+'&new=1';return}
+   if(payload.coupon)CL.store.set('cl-coupon',null);CL.store.set('cl-cart',[]);location.href='order.html?id='+encodeURIComponent(r.order.order_id)+'&new=1';return}
   err((r&&(MSG[r.error]||r.message))||MSG.server);
  }).catch(function(){err('تعذر الاتصال. اتأكدي من الإنترنت وحاولي تاني.')}).then(function(){busy=false;if(btn&&document.body.contains(btn)){btn.disabled=false;btn.textContent='تأكيد الطلب'}});
 }
