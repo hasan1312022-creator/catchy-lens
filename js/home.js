@@ -1,12 +1,24 @@
 (function(){
 var CL=window.CL,U=CL.url,I=CL.icon,A=CL.asset,e=CL.esc,img=CL.ui.img;
 Promise.all([CL.data.catalog(),CL.data.settings(),CL.data.content()]).then(function(r){
- var P=r[0],S=r[1],C=r[2];
+ var P=r[0],S=r[1],C=merge(r[2],S_home(r[1]));
  CL.ui.init(S,P);
  document.getElementById('app').innerHTML=CL.ui.header()+'<main id="main">'+home(P,C,S)+'</main>'+CL.ui.footer();
  CL.ui.bind();slider();
 });
 
+function S_home(S){return S&&S.home||null}
+function br(t){return e(t).replace(/\n/g,'<br>')}
+function merge(C,H){
+ C=Object.assign({},C);C.show={};
+ if(!H)return C;
+ if(H.slides&&H.slides.length){var sl=H.slides.filter(function(x){return x.on!==false&&x.desktop});if(sl.length)C.heroSlides=sl.map(function(x){return {desktop:x.desktop,mobile:x.mobile||'',alt:x.title||'',title:br(x.title||''),sub:x.sub||'',cta:x.cta||'اكتشفي',href:x.href||'catalog'}})}
+ ['quiz','offers','arrivals'].forEach(function(k){var b=H[k];if(!b)return;if(b.on===false){C[k]=null;return}var o=Object.assign({},C[k]||{});if(b.title)o.title=b.title;if(b.cta)o.cta=b.cta;if(b.href)o.href=b.href;if(b.desktop){o.desktop=b.desktop;o.image=b.desktop;o.mobile=b.mobile||''}C[k]=o});
+ if(H.film){C.film=Object.assign({},C.film,{cover:H.film.cover||(C.film||{}).cover,url:H.film.url||null})}
+ if(H.moments&&H.moments.length)C.moments=H.moments.filter(function(m){return m.image});
+ C.show=H.show||{};
+ return C;
+}
 function hero(slides){
  var tr=slides.map(function(s,i){return '<div class="slide'+(i?'':' on')+'" role="group" aria-roledescription="slide" aria-label="'+(i+1)+' من '+slides.length+'">'+pic(s.desktop,s.mobile,s.alt,i?' loading="lazy" decoding="async"':' fetchpriority="high"')+'<div class="hero-copy">'+(i?'<p class="slide-title" dir="auto">'+s.title+'</p>':'<h1 dir="auto">'+s.title+'</h1>')+'<p>'+e(s.sub)+'</p><a href="'+link(s.href)+'" class="btn">'+e(s.cta)+'</a></div></div>'}).join('');
  var dots=slides.map(function(s,i){return '<button type="button" class="dot'+(i?'':' on')+'" data-slide="'+i+'" aria-label="الشريحة '+(i+1)+'"'+(i?'':' aria-current="true"')+'></button>'}).join('');
@@ -55,13 +67,13 @@ function home(P,C,S){
  return '<div class="wrap">'+CL.ui.trust()
  +hero(C.heroSlides)
  +'<section class="section">'+brandsRow(brands)+'<div class="categories">'+cats.map(function(c){return '<a class="category" href="'+link(c[2])+'">'+img('img/category-'+c[0]+'.svg','')+c[1]+'</a>'}).join('')+'</div></section>'
- +'<section class="section">'+title('كل لون... حكاية')+'<div class="colors">'+C.colors.map(function(c){return '<a href="'+U.catalog+'?color='+e(c.id)+'">'+img(c.image,c.label,' loading="lazy" decoding="async"')+e(c.label)+'</a>'}).join('')+'</div></section>'
+ +(C.show.colors===false?'':'<section class="section">'+title('كل لون... حكاية')+'<div class="colors">'+C.colors.map(function(c){return '<a href="'+U.catalog+'?color='+e(c.id)+'">'+img(c.image,c.label,' loading="lazy" decoding="async"')+e(c.label)+'</a>'}).join('')+'</div></section>')
  +'<section class="section">'+title('الأكثر طلبًا','catalog')+grid(P.slice(0,4))+'</section>'
- +'<section class="section">'+title('فيديو البراند')+'<div class="film">'+img(f.cover,'عالم Catchy Lens',' loading="lazy" decoding="async"')+(f.url?'<a class="play" href="'+e(f.url)+'" aria-label="شغّلي الفيديو">'+I('play')+'</a>':'')+'</div>'+(f.url?'':empty('play','فيديو البراند هيظهر هنا بعد إضافته.'))+'</section>'
+ +(C.show.film===false||!(C.film&&C.film.url)?'':'<section class="section">'+title('فيديو البراند')+'<div class="film">'+img(f.cover,'عالم Catchy Lens',' loading="lazy" decoding="async"')+(f.url?'<a class="play" href="'+e(f.url)+'" aria-label="شغّلي الفيديو">'+I('play')+'</a>':'')+'</div>'+'</section>')
  +banner(C.quiz)+banner(C.offers,'alt')
  +'<section class="section">'+title('وصل حديثًا','catalog')+grid(P.slice(4,8))+'</section>'
  +banner(C.arrivals)
- +'<section class="section">'+title('Catchy Moments')+(C.moments&&C.moments.length?'<div class="moments">'+C.moments.map(function(m,i){return '<a href="'+e(m.url||'#')+'" aria-label="لحظة من كاتشي '+(i+1)+'">'+img(m.image,'لحظة من كاتشي '+(i+1),' loading="lazy" decoding="async"')+'</a>'}).join('')+'</div>':'')+(C.moments&&C.moments.some(function(m){return m.url})?'':empty('play','الفيديوهات وروابطها الأصلية لسه متضافتش.'))+'</section>'
- +'<section class="section narrow" style="text-align:center"><h2>تجاربكم بتكمل الحكاية</h2>'+(C.reviews&&C.reviews.length?'':empty('heart','لسه مفيش تقييمات منشورة.','تجاربكم وصوركم تُضاف بموافقتكم.'))+'</section></div>';
+ +(C.show.moments===false||!(C.moments&&C.moments.some(function(m){return m.url}))?'':'<section class="section">'+title('Catchy Moments')+(C.moments&&C.moments.length?'<div class="moments">'+C.moments.map(function(m,i){return '<a href="'+e(m.url||'#')+'" aria-label="لحظة من كاتشي '+(i+1)+'">'+img(m.image,'لحظة من كاتشي '+(i+1),' loading="lazy" decoding="async"')+'</a>'}).join('')+'</div>':'')+'</section>')
+ +'</div>';
 }
 })();

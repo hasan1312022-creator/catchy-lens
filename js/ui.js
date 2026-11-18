@@ -2,7 +2,7 @@
 var CL=window.CL,e=CL.esc,I=CL.icon,A=CL.asset;
 var U=CL.url={home:'index.html',catalog:'catalog.html',lenses:'catalog.html?category=lenses',care:'catalog.html?category=care',accessories:'catalog.html?category=accessories',quiz:'quiz.html',tracking:'order.html',offers:'offers.html',tryon:'try-on.html',cart:'cart.html',wishlist:'wishlist.html',search:'catalog.html?focus=q',about:'about.html',faq:'faq.html',shipping:'shipping.html',returns:'returns.html',privacy:'privacy.html',terms:'terms.html',contact:'contact.html',
  product:function(p){return 'product.html?slug='+encodeURIComponent(p.slug)}};
-U.cart='cart.html';var SOON=['quiz','tryon','wishlist'];U.offers='offers.html';SOON.forEach(function(k){U[k]='soon.html?p='+k});['about','faq','shipping','returns','privacy','terms','contact'].forEach(function(k){U[k]='page.html?p='+k});U.brands='brands.html';
+U.cart='cart.html';U.offers='offers.html';['quiz','tryon','wishlist'].forEach(function(k){U[k]='extra.html?p='+k});['about','faq','shipping','returns','privacy','terms','contact'].forEach(function(k){U[k]='page.html?p='+k});U.brands='brands.html';
 var S={},PRODUCTS=[],LAST=null,SHP=null,self2=null;
 function img(file,alt,extra){var d=CL.dims[file]||[];return '<img src="'+A(file)+'" alt="'+e(alt||'')+'"'+(d[0]?' width="'+d[0]+'" height="'+d[1]+'"':'')+(extra||'')+'>'}
 var NAV=[['الرئيسية','home'],['العدسات','lenses'],['المحاليل والتعقيم','care'],['الإكسسوارات','accessories'],['اعثري على عدستك','quiz'],['تتبعي طلبك','tracking'],['العروض','offers'],['جرّبي اللون','tryon']];

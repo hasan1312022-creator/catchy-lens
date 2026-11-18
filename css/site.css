@@ -171,3 +171,4 @@ html.lock{overflow:hidden}
 .offers-grid{display:grid;gap:14px;margin:8px 0 40px}@media(min-width:700px){.offers-grid{grid-template-columns:repeat(2,1fr)}}
 .offer-card{display:grid;gap:8px;padding:18px;border:1px solid #e3d4df;border-radius:18px;background:#fff}.offer-card h2{margin:0;font-size:20px}.offer-card .reward{display:inline-block;justify-self:start;padding:4px 12px;border-radius:999px;background:#f7d7e5;font-weight:700;font-size:14px}.offer-card p{margin:0;color:#6a5662}.offer-card .btn{justify-self:start}
 .sheetprice{font-weight:700;color:#381a30}
+.chip.on{background:#381a30;color:#fff;border-color:#381a30}

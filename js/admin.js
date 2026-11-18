@@ -51,10 +51,10 @@ function loadAll(){
 /* ---------- shell ---------- */
 function render(){
  root.innerHTML='<div class="bar"><b>Catchy Lens — لوحة التحكم</b><span class="sp"></span><button id="out">خروج</button></div><div class="tabs" role="tablist">'
-  +[['products','المنتجات'],['settings','الإعدادات'],['pages','الصفحات'],['offers','العروض'],['coupons','الكوبونات']].map(function(t){return '<button role="tab" data-tab="'+t[0]+'" aria-selected="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('')+'</div><main id="m"></main>';
+  +[['products','المنتجات'],['settings','الإعدادات'],['home','الرئيسية'],['pages','الصفحات'],['offers','العروض'],['coupons','الكوبونات']].map(function(t){return '<button role="tab" data-tab="'+t[0]+'" aria-selected="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('')+'</div><main id="m"></main>';
  document.getElementById('out').onclick=function(){S.tok=null;S.ref=null;save();loginView()};
  [].forEach.call(root.querySelectorAll('[data-tab]'),function(b){b.onclick=function(){S.tab=b.dataset.tab;render()}});
- ({products:productsView,settings:settingsView,pages:function(){pagesView()},offers:offersView,coupons:couponsView})[S.tab]();
+ ({products:productsView,settings:settingsView,pages:function(){pagesView()},home:homeView,offers:offersView,coupons:couponsView})[S.tab]();
 }
 /* ---------- products ---------- */
 function stockOf(p){return (p.store_variants||[]).reduce(function(n,v){return n+((v.stock&&v.stock.qty)||0)},0)}
@@ -149,6 +149,56 @@ function vupload(id,ev){
  document.body.appendChild(ov);paint();
 }
 
+/* ---------- home ---------- */
+var LINKS=[['catalog','كل المنتجات'],['offers','العروض'],['brands','الماركات'],['quiz','اعثري على عدستك'],['lenses','العدسات'],['care','محاليل'],['accessories','إكسسوارات']];
+var HB=[['quiz','بانر الاختبار'],['offers','بانر العروض'],['arrivals','بانر وصل حديثًا']];
+function himg(file){
+ return createImageBitmap(file).then(function(bm){var r=Math.min(1,2400/Math.max(bm.width,bm.height)),c=document.createElement('canvas');c.width=Math.round(bm.width*r);c.height=Math.round(bm.height*r);c.getContext('2d').drawImage(bm,0,0,c.width,c.height);return new Promise(function(ok){c.toBlob(ok,'image/webp',0.85)})})
+  .then(function(b){var path='home/'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.webp';return api('/storage/v1/object/'+BUCKET+'/'+path,{method:'POST',headers:{'Content-Type':'image/webp','x-upsert':'false'},body:b}).then(function(){return URL+'/storage/v1/object/public/'+BUCKET+'/'+path})});
+}
+function lsel(id,v){var has=LINKS.some(function(l){return l[0]===v});return '<select data-k="'+id+'">'+LINKS.map(function(l){return '<option value="'+l[0]+'"'+(l[0]===v?' selected':'')+'>'+esc(l[1])+'</option>'}).join('')+(v&&!has?'<option value="'+esc(v)+'" selected>'+esc(v)+'</option>':'')+'</select>'}
+function ipick(k,v,label){return '<div class="hi"><span>'+esc(label)+'</span>'+(v?'<img src="'+esc(v)+'" alt="" style="height:54px;border-radius:8px;display:block;margin:4px 0">':'<small style="color:#8a7280">الصورة الحالية (الافتراضية)</small>')+'<input type="file" accept="image/*" data-up="'+k+'">'+(v?' <button type="button" class="btn sm alt" data-clr="'+k+'">شيلي</button>':'')+'</div>'}
+function homeView(){
+ var m=document.getElementById('m'),H=JSON.parse(JSON.stringify(S.settings.home||{}));
+ H.slides=H.slides||[];H.show=H.show||{};H.film=H.film||{};H.moments=H.moments||[];
+ HB.forEach(function(b){H[b[0]]=H[b[0]]||{}});
+ function paint(){
+  var h='<h2>الصفحة الرئيسية</h2><p class="hint" style="max-width:760px;color:#6a5662">لو سبتي السلايدر فاضي هيظهر الافتراضي. مقاسات مقترحة: صورة الكمبيوتر 2400×1000، صورة الموبايل 1080×1350، البانرات 1600×600.</p><div style="display:grid;gap:16px;max-width:820px">';
+  h+='<div class="card"><h3>السلايدر (حد أقصى 5)</h3>'+H.slides.map(function(x,i){return '<fieldset style="border:1px solid #e6d9e0;border-radius:12px;padding:12px;margin:10px 0;display:grid;gap:8px"><legend>شريحة '+(i+1)+'</legend><label><input type="checkbox" data-sl="'+i+'.on"'+(x.on!==false?' checked':'')+'> ظاهرة</label>'+ipick('sl.'+i+'.desktop',x.desktop,'صورة الكمبيوتر')+ipick('sl.'+i+'.mobile',x.mobile,'صورة الموبايل (اختياري)')+'<label>العنوان (سطر جديد = سطر في الموقع)<textarea rows="2" data-sl="'+i+'.title">'+esc(x.title||'')+'</textarea></label><label>النص الصغير<input data-sl="'+i+'.sub" value="'+esc(x.sub||'')+'"></label><label>نص الزرار<input data-sl="'+i+'.cta" value="'+esc(x.cta||'')+'"></label><label>الزرار يودّي لـ'+lsel('sl.'+i+'.href',x.href||'catalog')+'</label><button type="button" class="btn sm alt" data-rm="'+i+'">حذف الشريحة</button></fieldset>'}).join('')+(H.slides.length<5?'<button type="button" class="btn alt" id="addsl">+ إضافة شريحة</button>':'')+'</div>';
+  HB.forEach(function(b){var x=H[b[0]];h+='<div class="card" style="display:grid;gap:8px"><h3>'+b[1]+'</h3><label><input type="checkbox" data-bn="'+b[0]+'.on"'+(x.on!==false?' checked':'')+'> ظاهر</label><label>العنوان<input data-bn="'+b[0]+'.title" value="'+esc(x.title||'')+'" placeholder="سيبيه فاضي للافتراضي"></label><label>نص الزرار<input data-bn="'+b[0]+'.cta" value="'+esc(x.cta||'')+'"></label><label>الزرار يودّي لـ'+lsel('bn.'+b[0]+'.href',x.href||'')+'</label>'+ipick('bn.'+b[0]+'.desktop',x.desktop,'صورة الكمبيوتر')+ipick('bn.'+b[0]+'.mobile',x.mobile,'صورة الموبايل (اختياري)')+'</div>'});
+  h+='<div class="card" style="display:grid;gap:8px"><h3>فيديو البراند</h3><label>رابط الفيديو (يوتيوب/تيك توك/إنستجرام) — فاضي = القسم مخفي<input dir="ltr" data-fm="url" value="'+esc(H.film.url||'')+'"></label>'+ipick('fm.cover',H.film.cover,'صورة الغلاف')+'</div>';
+  h+='<div class="card" style="display:grid;gap:8px"><h3>Catchy Moments (حد أقصى 6)</h3>'+H.moments.map(function(x,i){return '<div style="border:1px solid #e6d9e0;border-radius:12px;padding:10px">'+ipick('mo.'+i+'.image',x.image,'صورة '+(i+1))+'<label>الرابط<input dir="ltr" data-mo="'+i+'.url" value="'+esc(x.url||'')+'"></label><button type="button" class="btn sm alt" data-rmm="'+i+'">حذف</button></div>'}).join('')+(H.moments.length<6?'<button type="button" class="btn alt" id="addmo">+ إضافة صورة</button>':'')+'<small style="color:#6a5662">القسم بيظهر بس لو في صورة ليها رابط.</small></div>';
+  h+='<div class="card"><h3>إخفاء أقسام</h3><label><input type="checkbox" data-sh="colors"'+(H.show.colors!==false?' checked':'')+'> قسم "كل لون... حكاية"</label></div>';
+  h+='<div style="display:flex;gap:10px"><button class="btn" id="hsave">حفظ الرئيسية</button><button class="btn alt" id="hreset">رجّعي الافتراضي</button></div></div>';
+  m.innerHTML=h;
+ }
+ function ref(k){/* returns [obj,key] */var a=k.split('.');if(a[0]==='sl')return [H.slides[+a[1]],a[2]];if(a[0]==='bn')return [H[a[1]],a[2]];if(a[0]==='fm')return [H.film,a[1]];if(a[0]==='mo')return [H.moments[+a[1]],a[2]];}
+ m.onchange=function(ev){
+  var t=ev.target,r;
+  if(t.dataset.up){var f=t.files[0];if(!f)return;t.disabled=true;himg(f).then(function(u){r=ref(t.dataset.up);r[0][r[1]]=u;paint()}).catch(function(e){msg('فشل رفع الصورة: '+e.message,true);t.disabled=false});return}
+  if(t.dataset.k){r=ref(t.dataset.k);r[0][r[1]]=t.value;return}
+  var d=t.dataset;
+  if(d.sl){var a=d.sl.split('.');H.slides[+a[0]][a[1]]=t.type==='checkbox'?t.checked:t.value}
+  else if(d.bn){var b=d.bn.split('.');H[b[0]][b[1]]=t.type==='checkbox'?t.checked:t.value}
+  else if(d.fm)H.film[d.fm]=t.value.trim();
+  else if(d.mo){var c=d.mo.split('.');H.moments[+c[0]][c[1]]=t.value.trim()}
+  else if(d.sh)H.show[d.sh]=t.checked;
+ };
+ m.onclick=function(ev){
+  var t=ev.target.closest('button');if(!t)return;
+  if(t.id==='addsl'){H.slides.push({on:true,href:'catalog'});paint()}
+  else if(t.id==='addmo'){H.moments.push({});paint()}
+  else if(t.dataset.rm!=null){H.slides.splice(+t.dataset.rm,1);paint()}
+  else if(t.dataset.rmm!=null){H.moments.splice(+t.dataset.rmm,1);paint()}
+  else if(t.dataset.clr){var r=ref(t.dataset.clr);delete r[0][r[1]];paint()}
+  else if(t.id==='hsave'){
+   var bad=H.slides.some(function(x){return x.on!==false&&!x.desktop});if(bad)return msg('في شريحة ظاهرة من غير صورة.',true);
+   t.disabled=true;api('/rest/v1/store_settings?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:[{key:'home',value:H,public:true}]}).then(function(){S.settings.home=JSON.parse(JSON.stringify(H));msg('اتحفظت الرئيسية')}).catch(function(e){msg('ما اتحفظش: '+e.message,true)}).then(function(){t.disabled=false});
+  }
+  else if(t.id==='hreset'){if(!confirm('ترجيع الرئيسية للافتراضي؟'))return;api('/rest/v1/store_settings?key=eq.home',{method:'DELETE',headers:{Prefer:'return=minimal'}}).then(function(){delete S.settings.home;msg('رجعت الافتراضية');homeView()}).catch(function(e){msg(e.message,true)})}
+ };
+ paint();
+}
 /* ---------- pages ---------- */
 var PG=[['about','من نحن'],['shipping','الشحن والتوصيل'],['returns','الاستبدال والاسترجاع'],['faq','الأسئلة الشائعة'],['privacy','سياسة الخصوصية'],['terms','الشروط والأحكام'],['contact','تواصلي معانا']];
 function pagesView(sel){
