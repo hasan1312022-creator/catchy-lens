@@ -172,3 +172,4 @@ html.lock{overflow:hidden}
 .offer-card{display:grid;gap:8px;padding:18px;border:1px solid #e3d4df;border-radius:18px;background:#fff}.offer-card h2{margin:0;font-size:20px}.offer-card .reward{display:inline-block;justify-self:start;padding:4px 12px;border-radius:999px;background:#f7d7e5;font-weight:700;font-size:14px}.offer-card p{margin:0;color:#6a5662}.offer-card .btn{justify-self:start}
 .sheetprice{font-weight:700;color:#381a30}
 .chip.on{background:#381a30;color:#fff;border-color:#381a30}
+.ttag{display:block;font-size:12px;color:#8a6a80;margin:0 0 2px}.buy .ttag{font-size:14px;margin-bottom:4px}

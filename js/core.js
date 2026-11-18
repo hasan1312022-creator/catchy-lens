@@ -11,6 +11,9 @@ CL.icon=function(k){return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="tr
 CL.state={in:'\u0645\u062a\u0648\u0641\u0631',low:'\u0643\u0645\u064a\u0629 \u0642\u0644\u064a\u0644\u0629',out:'\u0646\u0641\u062f \u0627\u0644\u0645\u062e\u0632\u0648\u0646',pre:'\u0628\u0627\u0644\u0637\u0644\u0628'};
 CL.dims={"img/hero-desktop.webp": [2400, 1000], "img/hero-mobile.webp": [1080, 1350], "img/brand-video-cover.webp": [1920, 1080], "img/lens-quiz.webp": [1200, 800], "img/offers-desktop.webp": [1600, 600], "img/offers-mobile.webp": [1080, 800], "img/new-arrivals-desktop.webp": [1600, 600], "img/new-arrivals-mobile.webp": [1080, 800], "img/catchy-moments-01.webp": [1080, 1920], "img/catchy-moments-02.webp": [1080, 1920], "img/catchy-moments-03.webp": [1080, 1920], "img/lens-box.webp": [1536, 1024], "img/eye-honey.webp": [800, 800], "img/eye-green.webp": [800, 800], "img/eye-blue.webp": [800, 800], "img/eye-gray.webp": [800, 800], "img/eye-brown.webp": [800, 800], "img/eye-hazel.webp": [800, 800], "img/eye-lilac.webp": [800, 800], "img/eye-cocoa.webp": [800, 800]};
 CL.store={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+CL.powerList=function(p,S){return p.powers!==undefined?p.powers:((S&&S.powers)||[])};
+CL.planoOk=function(p){return p.planoOk!==false};
+CL.typeLabel=function(p){var t=p.brandType||p.powerType;return t==='both'?'بلانو وباور':(t?'بلانو':'')};
 CL.wish={list:function(){return CL.store.get('cl-wish',[])},has:function(id){return this.list().indexOf(id)>-1},toggle:function(id){var l=this.list(),i=l.indexOf(id);if(i>-1)l.splice(i,1);else l.push(id);CL.store.set('cl-wish',l);return i<0}};
 CL.cart={
  items:function(){return CL.store.get('cl-cart',[])},

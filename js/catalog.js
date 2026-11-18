@@ -3,7 +3,7 @@ var CL=window.CL,U=CL.url,I=CL.icon,e=CL.esc,PAGE=8;
 var DUR={daily:'يومية',monthly:'شهرية',quarterly:'٣ شهور',semiannual:'٦ شهور',yearly:'سنوية'};
 var CAT={'':'كل المنتجات',lenses:'اكتشفي عدستك',care:'المحاليل والتعقيم',accessories:'الإكسسوارات'};
 var AV=[['in','متوفر'],['low','كمية قليلة'],['pre','بالطلب'],['out','نفد المخزون']];
-var TYPE=[['plano','Plano'],['both','Plano & Power']];
+var TYPE=[['plano','بلانو'],['both','بلانو وباور']];
 var ARR=['brand','color','type','dur','avail'];
 var P=[],S={},st,CATL;
 function parse(){
@@ -29,7 +29,7 @@ function filtered(){
   if(st.color.length&&st.color.indexOf(p.color)<0)return false;
   if(st.dur.length&&st.dur.indexOf(p.duration)<0)return false;
   if(st.avail.length&&st.avail.indexOf(p.state)<0)return false;
-  if(st.type.length&&st.type.indexOf(p.powerType)<0)return false;
+  if(st.type.length&&st.type.indexOf(p.brandType||p.powerType)<0)return false;
   if(q&&(p.name+' '+p.brand).toLowerCase().indexOf(q)<0)return false;
   if(!isNaN(mn)&&(p.price==null||p.price<mn))return false;
   if(!isNaN(mx)&&(p.price==null||p.price>mx))return false;

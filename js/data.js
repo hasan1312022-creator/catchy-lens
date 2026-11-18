@@ -16,7 +16,7 @@ function explode(list){
    var imgs=((v.images&&v.images.length)?v.images:(p.images||[])).slice();
    out.push({id:v.id,pid:p.id,powerPrice:p.powerPrice,slug:p.slug+'-'+v.id,brand:p.brand,name:v.color||p.name,fullName:p.name,category:p.category,
     color:v.swatch||'',duration:DUR[p.duration]||p.duration||'',price:p.price,oldPrice:p.oldPrice,state:v.state,
-    powerType:p.powerType,image:imgs[0]||'img/lens-box.webp',images:imgs.length?imgs:['img/lens-box.webp'],description:p.description||''});
+    powerType:v.powers===undefined?p.powerType:((p.powerType==='both'&&v.powers.length)?'both':'plano'),brandType:p.powerType,powers:v.powers,planoOk:v.planoOk!==false,image:imgs[0]||'img/lens-box.webp',images:imgs.length?imgs:['img/lens-box.webp'],description:p.description||''});
   });
  });
  return out;

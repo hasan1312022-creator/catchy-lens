@@ -4,7 +4,7 @@ var DUR={daily:'يومية',monthly:'شهرية',quarterly:'٣ شهور',semiann
 var CATN={lenses:'العدسات',care:'المحاليل والتعقيم',accessories:'الإكسسوارات'};
 var P,S={},ALL=[],cur=0;
 function slug(){return new URLSearchParams(CL.qs()).get('slug')||window.__SLUG||''}
-function powerOpts(sel){return '<option value="0.00">بدون قوة (0.00)</option>'+(S.powers||[]).map(function(x){return '<option value="'+e(x)+'"'+(x===sel?' selected':'')+'>'+e(x)+'</option>'}).join('')}
+function powerOpts(sel){return (CL.planoOk(P)?'<option value="0.00">بدون قوة (0.00)</option>':'')+CL.powerList(P,S).map(function(x){return '<option value="'+e(x)+'"'+(x===sel?' selected':'')+'>'+e(x)+'</option>'}).join('')}
 function gallery(){
  var imgs=P.images&&P.images.length?P.images:[P.image];
  return '<div class="gal"><div class="gal-main">'+CL.ui.img(imgs[0],P.name,' id="gmain" fetchpriority="high"')+'</div>'+(imgs.length>1?'<div class="gal-thumbs" role="group" aria-label="صور المنتج">'+imgs.map(function(f,i){return '<button type="button" class="thumb'+(i?'':' on')+'" data-img="'+e(f)+'" aria-label="الصورة '+(i+1)+'" aria-pressed="'+(i===0)+'">'+CL.ui.img(f,'',' loading="lazy" decoding="async"')+'</button>'}).join('')+'</div>':'')+'</div>';
@@ -15,12 +15,12 @@ function stateNote(){
 }
 function buy(){
  var lens=P.category==='lenses',out=P.state==='out',disc=P.oldPrice&&P.price&&P.oldPrice>P.price?Math.round((1-P.price/P.oldPrice)*100):0;
- var h='<div class="buy"><a class="brand" href="'+U.catalog+'?brand='+encodeURIComponent(P.brand)+'">'+e(P.brand)+'</a><h1>'+e(P.name)+'</h1>'
+ var h='<div class="buy"><a class="brand" href="'+U.catalog+'?brand='+encodeURIComponent(P.brand)+'">'+e(P.brand)+'</a>'+(lens&&CL.typeLabel(P)?'<small class="ttag">'+CL.typeLabel(P)+'</small>':'')+'<h1>'+e(P.name)+'</h1>'
   +'<div class="pricebox"><span class="price">'+CL.money(P.price)+'</span>'+(P.oldPrice?'<del class="old">'+CL.money(P.oldPrice)+'</del>':'')+(disc?'<span class="tag discount">-'+disc+'%</span>':'')+'</div>'+(lens&&P.powerType==='both'&&P.powerPrice!=null&&P.powerPrice!==P.price?'<p class="note">سعر العدسة بقوة نظر: <b>'+CL.money(P.powerPrice)+'</b> (لو عين بدون قوة وعين بقوة السعر متوسط السعرين).</p>':'')
-  +'<div class="chips-row"><span class="stock '+(P.state==='in'?'':e(P.state))+'">'+(CL.state[P.state]||'')+'</span>'+(lens&&P.powerType?'<span class="ptype inline" dir="ltr">'+(P.powerType==='both'?'Plano &amp; Power':'Plano')+'</span>':'')+'</div>'+stateNote();
+  +'<div class="chips-row"><span class="stock '+(P.state==='in'?'':e(P.state))+'">'+(CL.state[P.state]||'')+'</span>'+'</div>'+stateNote();
  if(lens&&P.powerType==='both'){
   h+='<div class="powerbox"><a class="textlink" href="#" data-help>إزاي أعرف قوة نظري؟</a><p class="note">تأكدي من الروشتة قبل اختيار القوة.</p><div class="two"><label>العين اليمنى<select id="pr">'+powerOpts()+'</select></label><label>العين اليسرى<select id="pl">'+powerOpts()+'</select></label></div><label class="same"><input type="checkbox" id="same"> <span>نفس القوة للعين التانية</span></label></div>';
- }else if(lens){h+='<p class="note">العدسة دي Plano فقط (بدون قوة نظر).</p>'}
+ }else if(lens){h+='<p class="note">'+(P.brandType==='both'?'اللون ده متاح بلانو (بدون قوة نظر) فقط حاليًا.':'العدسة دي بلانو فقط (بدون قوة نظر).')+'</p>'}
  h+='<div class="qty"><span>الكمية</span><div dir="ltr"><button type="button" data-q="-1" aria-label="أقل">−</button><output id="qty">1</output><button type="button" data-q="1" aria-label="أكتر">+</button></div></div>'
   +(lens&&P.powerType==='both'?'<p class="note" id="pcur"></p>':'')+'<p class="err" id="perr" role="alert" hidden></p>'
   +'<button type="button" class="btn buybtn" id="addmain" data-pdp-add'+(out?' disabled':'')+'>'+(out?'نفد المخزون':'أضيفي للسلة')+'</button></div>';
@@ -30,7 +30,7 @@ function details(){
  var specs=[['الماركة',P.brand]];
  if(P.color&&S.colorLabels&&S.colorLabels[P.color])specs.push(['اللون',S.colorLabels[P.color]]);
  if(P.duration&&DUR[P.duration])specs.push(['مدة الاستخدام',DUR[P.duration]]);
- if(P.category==='lenses'&&P.powerType)specs.push(['النوع',P.powerType==='both'?'Plano & Power':'Plano']);
+ if(P.category==='lenses'&&P.powerType)specs.push(['النوع',CL.typeLabel(P)]);
  var t='<table class="specs"><tbody>'+specs.map(function(r){return '<tr><th scope="row">'+e(r[0])+'</th><td>'+e(r[1])+'</td></tr>'}).join('')+'</tbody></table>';
  var d=P.desc?'<p>'+e(P.desc)+'</p>':'<p class="muted">وصف المنتج هيظهر هنا بعد إضافته.</p>';
  return '<div class="acc"><details open><summary>تفاصيل المنتج</summary><div class="acc-body">'+d+t+'</div></details>'

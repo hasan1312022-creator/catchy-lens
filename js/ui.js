@@ -22,21 +22,21 @@ CL.ui={
  },
  card:function(p){
   var d=CL.dims[p.image]||[],disc=p.oldPrice&&p.price&&p.oldPrice>p.price?Math.round((1-p.price/p.oldPrice)*100):0,href=U.product(p);
-  var out=p.state==='out',chip=p.category==='lenses'&&p.powerType?'<span class="ptype" dir="ltr">'+(p.powerType==='both'?'Plano &amp; Power':'Plano')+'</span>':'';
-  return '<article class="card"><button class="wish'+(CL.wish.has(p.id)?' selected':'')+'" data-wish="'+p.id+'" aria-label="المفضلة" aria-pressed="'+CL.wish.has(p.id)+'">'+I('heart')+'</button><a class="photo" href="'+href+'">'+img(p.image,p.name,' loading="lazy" decoding="async"')+(disc?'<span class="tag discount">-'+disc+'%</span>':'')+chip+'</a><div class="card-info"><span class="brand">'+e(p.brand)+'</span><a href="'+href+'"><h3>'+e(p.name)+'</h3></a><div class="price">'+CL.money(p.price)+'</div>'+(p.oldPrice?'<del class="old">السعر القديم: '+CL.money(p.oldPrice)+'</del>':'')+'<span class="stock '+(p.state==='in'?'':e(p.state))+'">'+(CL.state[p.state]||'')+'</span>'+(out?'<a class="btn" href="'+href+'">شوفي التفاصيل</a>':'<button type="button" class="btn" data-add="'+p.id+'">أضيفي للسلة</button>')+(p.state==='pre'?'<small>'+(S.leadDays?'تُجهّز خلال '+e(S.leadDays)+' أيام':'تُجهّز بالطلب')+'</small>':'')+'</div></article>';
+  var out=p.state==='out',chip='',tl=p.category==='lenses'?CL.typeLabel(p):'';
+  return '<article class="card"><button class="wish'+(CL.wish.has(p.id)?' selected':'')+'" data-wish="'+p.id+'" aria-label="المفضلة" aria-pressed="'+CL.wish.has(p.id)+'">'+I('heart')+'</button><a class="photo" href="'+href+'">'+img(p.image,p.name,' loading="lazy" decoding="async"')+(disc?'<span class="tag discount">-'+disc+'%</span>':'')+chip+'</a><div class="card-info"><span class="brand">'+e(p.brand)+'</span>'+(tl?'<small class="ttag">'+tl+'</small>':'')+'<a href="'+href+'"><h3>'+e(p.name)+'</h3></a><div class="price">'+CL.money(p.price)+'</div>'+(p.oldPrice?'<del class="old">السعر القديم: '+CL.money(p.oldPrice)+'</del>':'')+'<span class="stock '+(p.state==='in'?'':e(p.state))+'">'+(CL.state[p.state]||'')+'</span>'+(out?'<a class="btn" href="'+href+'">شوفي التفاصيل</a>':'<button type="button" class="btn" data-add="'+p.id+'">أضيفي للسلة</button>')+(p.state==='pre'?'<small>'+(S.leadDays?'تُجهّز خلال '+e(S.leadDays)+' أيام':'تُجهّز بالطلب')+'</small>':'')+'</div></article>';
  },
  sheet:function(p){
   LAST=document.activeElement;
-  var pw=S.powers||[],o='<option value="">اختاري القوة</option><option value="0.00">بدون قوة (0.00)</option>'+pw.map(function(x){return '<option value="'+e(x)+'">'+e(x)+'</option>'}).join('');
+  var pw=CL.powerList(p,S),po=CL.planoOk(p),o='<option value="">اختاري القوة</option>'+(po?'<option value="0.00">بدون قوة (0.00)</option>':'')+pw.map(function(x){return '<option value="'+e(x)+'">'+e(x)+'</option>'}).join('');
   var h='<div class="sheet" data-sheet><div class="sheet-box" role="dialog" aria-modal="true" aria-labelledby="sh-t"><button type="button" class="x" data-close aria-label="إغلاق">×</button><span class="brand">'+e(p.brand)+'</span><h3 id="sh-t">'+e(p.name)+'</h3>'
-   +'<div class="seg" role="radiogroup" aria-label="نوع العدسة"><label><input type="radio" name="pt" value="plano" checked> <span>بدون قوة (Plano)</span></label><label><input type="radio" name="pt" value="power"> <span>بقوة نظر</span></label></div>'
-   +'<div class="powers" hidden><div class="two"><label>العين اليمنى<select name="r">'+o+'</select></label><label>العين اليسرى<select name="l">'+o+'</select></label></div><label class="same"><input type="checkbox" name="same"> <span>نفس القوة للعين التانية</span></label><p class="note">تأكدي من الروشتة قبل اختيار القوة.</p></div>'
+   +'<div class="seg" role="radiogroup" aria-label="نوع العدسة"><label><input type="radio" name="pt" value="plano"'+(po?' checked':' disabled')+'> <span>بدون قوة (Plano)</span></label><label><input type="radio" name="pt" value="power"'+(po?'':' checked')+'> <span>بقوة نظر</span></label></div>'
+   +'<div class="powers"'+(po?' hidden':'')+'><div class="two"><label>العين اليمنى<select name="r">'+o+'</select></label><label>العين اليسرى<select name="l">'+o+'</select></label></div><label class="same"><input type="checkbox" name="same"> <span>نفس القوة للعين التانية</span></label><p class="note">تأكدي من الروشتة قبل اختيار القوة.</p></div>'
    +'<p class="note sheetprice" data-sp></p>'
    +'<div class="qty"><span>الكمية</span><div dir="ltr"><button type="button" data-q="-1" aria-label="أقل">−</button><output>1</output><button type="button" data-q="1" aria-label="أكتر">+</button></div></div>'
    +(p.state==='pre'?'<p class="note">'+(S.leadDays?'تُجهّز خلال '+e(S.leadDays)+' أيام':'تُجهّز بالطلب')+'</p>':'')
    +'<p class="err" role="alert" hidden></p><button type="button" class="btn" data-confirm="'+p.id+'">أضيفي للسلة</button></div></div>';
   var d=document.createElement('div');d.innerHTML=h;document.body.appendChild(d.firstChild);document.documentElement.classList.add('lock');
-  var sh=document.querySelector('[data-sheet]');sh.querySelector('input').focus();self2.sheetPrice(sh,p);SHP=p;
+  var sh=document.querySelector('[data-sheet]');sh.querySelector('input:not([disabled])').focus();self2.sheetPrice(sh,p);SHP=p;
  },
  sheetPrice:function(sh,p){var el=sh.querySelector('[data-sp]');if(!el)return;var pt=sh.querySelector('input[name=pt]:checked').value,r=sh.querySelector('[name=r]').value,l=sh.querySelector('[name=l]').value,same=sh.querySelector('[name=same]').checked;if(same)l=r;
   var it=pt==='power'?{plano:false,r:r,l:l}:{plano:true};var u=CL.unitPrice(p,it),pp=p.powerPrice!=null?p.powerPrice:p.price;
@@ -55,7 +55,7 @@ CL.ui={
    var q=t.closest('[data-q]');if(q){var o=sh.querySelector('output'),n=Math.max(1,Math.min(10,(+o.textContent)+(+q.dataset.q)));o.textContent=n;return}
    var c=t.closest('[data-confirm]');if(c){
     var p=byId(c.dataset.confirm),pt=sh.querySelector('input[name=pt]:checked').value,r=sh.querySelector('[name=r]').value,l=sh.querySelector('[name=l]').value,same=sh.querySelector('[name=same]').checked,er=sh.querySelector('.err'),qty=+sh.querySelector('output').textContent;
-    if(pt==='power'){if(same)l=r;if(!r||!l){er.textContent='اختاري قوة العين اليمنى والعين اليسرى.';er.hidden=false;return}CL.cart.add(r==='0.00'&&l==='0.00'?{id:p.id,slug:p.slug,plano:true,q:qty}:{id:p.id,slug:p.slug,plano:false,r:r,l:l,q:qty})}
+    if(pt==='power'){if(same)l=r;if(!r||!l){er.textContent='اختاري قوة العين اليمنى والعين اليسرى.';er.hidden=false;return}if(!CL.planoOk(p)&&(r==='0.00'||l==='0.00')){er.textContent='البلانو مش متاح حاليًا في اللون ده، اختاري قوة للعينين.';er.hidden=false;return}CL.cart.add(r==='0.00'&&l==='0.00'?{id:p.id,slug:p.slug,plano:true,q:qty}:{id:p.id,slug:p.slug,plano:false,r:r,l:l,q:qty})}
     else CL.cart.add({id:p.id,slug:p.slug,plano:true,q:qty});
     self.closeSheet();CL.toast('اتضافت للسلة');
    }
