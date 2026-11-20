@@ -178,8 +178,6 @@ html.lock{overflow:hidden}
 .wres h4{font-size:22px;margin:6px 0}.wres .prize{font-size:20px;font-weight:700;margin:4px 0}.wres .code{display:inline-block;background:#f4e7f0;border:2px dashed #a8508f;border-radius:12px;padding:10px 22px;font-size:24px;letter-spacing:3px;font-weight:700;margin:8px 0}
 .wform[hidden],.wres[hidden]{display:none}
 /* Quick view */
-.qvhint{position:absolute;inset-inline:0;bottom:10px;margin:0 auto;width:max-content;max-width:90%;background:#381a30d9;color:#fff;font-size:13px;line-height:1;padding:8px 14px;border-radius:999px;pointer-events:none;opacity:.92}
-@media(hover:hover){.qvhint{opacity:0;transition:opacity .2s}.photo:hover .qvhint,.photo:focus-visible .qvhint{opacity:.95}}
 .sheet-box.qv{max-width:480px;gap:10px}
 .qv-gal{display:flex;flex-direction:column;gap:8px}
 .qv-main{position:relative;background:#f5eff5;border-radius:16px;overflow:hidden;display:flex;justify-content:center}
@@ -217,3 +215,22 @@ html.lock{overflow:hidden}
 .tr-pn{display:flex;flex-direction:column;gap:2px;text-align:center}.tr-pn .price{font-weight:700}
 @media(max-width:420px){.tr-lens{grid-template-columns:repeat(4,1fr)}}
 #tr-lstop[hidden],#tr-liveb[hidden],#tr-stage[hidden]{display:none!important}
+/* v1.9: footer centered logo, social icons, floating contact stack, eye quick-view button, quick view arrows */
+.footgrid>div:first-child{text-align:center}.footgrid>div:first-child img{margin:0 auto 2px}
+.social.icons{justify-content:center;gap:12px;padding:20px 0 6px}
+.social.icons a.si,.floaters a{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#381a30;color:#fffaf7;text-decoration:none}
+.social.icons a.si svg,.floaters a svg{width:21px;height:21px}.social.icons a.si svg.ico{fill:none;stroke:currentColor}
+.floaters{position:fixed;left:24px;bottom:25px;z-index:30;display:flex;flex-direction:column;gap:10px}
+.floaters a{box-shadow:0 4px 20px #381a3030}.floaters .wa{position:static;width:48px;height:48px;background:#237a57;box-shadow:0 4px 20px #381a3030}
+.floaters a.fl{width:44px;height:44px;margin-inline:2px}
+.has-buy .floaters{bottom:90px}
+.wheel-launcher{left:auto!important;right:24px}
+@media(max-width:800px){.floaters{left:14px;bottom:18px;gap:8px}.floaters .wa{width:43px;height:43px}.floaters a.fl{width:40px;height:40px;margin-inline:1.5px}.wheel-launcher{left:auto!important;right:14px}}
+.qvbtn{position:absolute;top:17px;right:17px;z-index:2;width:34px;height:34px;display:grid;place-items:center;padding:0;border-radius:50%;background:#381a30;color:#fffaf7;border:0;box-shadow:0 2px 8px #381a3030}
+.qvbtn svg{width:18px;height:18px}.qvbtn::after{content:'';position:absolute;inset:-8px}
+@media(max-width:800px){.qvbtn{right:12px;top:12px;width:30px;height:30px}.qvbtn svg{width:16px;height:16px}}
+.qv-ar{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;background:#fffaf7e6;border:0;display:grid;place-items:center;padding:0;color:#381a30;box-shadow:0 1px 6px #0003}
+.qv-ar svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.qv-ar.l{left:8px}.qv-ar.r{right:8px}
+.qv-cnt{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:#381a30c0;color:#fff;font-size:12px;padding:2px 10px;border-radius:999px;direction:ltr}
+.sheet .btn.alt{background:transparent;color:#381a30;border:1px solid #381a30}
