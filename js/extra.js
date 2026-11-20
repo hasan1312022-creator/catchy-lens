@@ -9,7 +9,7 @@ Promise.all([CL.data.catalog(),CL.data.settings()]).then(function(r){
  a.innerHTML=CL.ui.header()+'<main id="main" class="wrap"><div id="x"></div></main>'+CL.ui.footer();
  CL.ui.bind();
  var x=document.getElementById('x');
- ({wishlist:wish,quiz:quiz,tryon:tryon}[k]||wish)(x,P);
+ ({wishlist:wish,quiz:quiz,tryon:tryon}[k]||wish)(x,P,r[1]);
 });
 function grid(l){return '<div class="products">'+l.map(CL.ui.card).join('')+'</div>'}
 function empty(h,p){return '<div class="section-empty">'+I('lens')+'<h3>'+h+'</h3><p>'+p+'</p><a class="btn" href="'+U.catalog+'">شوفي المنتجات</a></div>'}
@@ -55,19 +55,6 @@ function quiz(x,P){
  };
  show();
 }
-/* try colors */
-function tryon(x,P){
- var L=P.filter(function(p){return p.category==='lenses'});
- if(!L.length){x.innerHTML='<h1>جرّبي اللون</h1>'+empty('الألوان هتظهر قريب','لسه مفيش عدسات.');return}
- var cur=0,brands=[],s={};L.forEach(function(p){if(!s[p.brand]){s[p.brand]=1;brands.push(p.brand)}});var br='';
- function list(){return L.filter(function(p){return !br||p.brand===br})}
- function paint(){
-  var l=list();if(cur>=l.length)cur=0;var p=l[cur],href=U.product(p);
-  x.innerHTML='<h1>جرّبي اللون</h1><p class="lead">اختاري لون وشوفي شكله، وقارني بين الألوان.</p><div class="chips"><button type="button" class="chip'+(br?'':' on')+'" data-br="">كل الماركات</button>'+brands.map(function(b){return '<button type="button" class="chip'+(br===b?' on':'')+'" data-br="'+e(b)+'">'+e(b)+'</button>'}).join('')+'</div>'
-   +'<div class="tryon" style="display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));align-items:start;margin:10px 0 20px"><a href="'+href+'" class="photo" style="display:block;border-radius:18px;overflow:hidden">'+CL.ui.img(p.image,p.name)+'</a><div><span class="brand">'+e(p.brand)+'</span><h2 style="margin:4px 0">'+e(p.name)+'</h2><div class="price">'+CL.money(p.price)+'</div><span class="stock '+(p.state==='in'?'':e(p.state))+'">'+(CL.state[p.state]||'')+'</span><p style="margin:14px 0"><a class="btn" href="'+href+'">اطلبيها</a></p></div></div>'
-   +'<div class="chips">'+l.map(function(q,i){return '<button type="button" class="chip'+(i===cur?' on':'')+'" data-c="'+i+'">'+e(q.name)+'</button>'}).join('')+'</div>';
- }
- x.onclick=function(ev){var t=ev.target.closest('button');if(!t)return;if(t.dataset.c!=null){cur=+t.dataset.c;paint()}else if(t.dataset.br!=null){br=t.dataset.br;cur=0;paint()}};
- paint();
-}
+/* try colors: camera try-on lives in tryon.js */
+function tryon(x,P,S){CL.tryon.mount(x,P,S)}
 })();

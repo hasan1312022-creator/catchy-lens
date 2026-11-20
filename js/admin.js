@@ -54,10 +54,10 @@ function loadAll(){
 /* ---------- shell ---------- */
 function render(){
  root.innerHTML=(EMB?'':'<div class="bar"><b>Catchy Lens — لوحة التحكم</b><span class="sp"></span><button id="out">خروج</button></div>')+'<div class="tabs" role="tablist">'
-  +[['products','المنتجات'],['settings','الإعدادات'],['home','الرئيسية'],['wheel','العجلة'],['pages','الصفحات'],['offers','العروض'],['coupons','الكوبونات']].map(function(t){return '<button role="tab" data-tab="'+t[0]+'" aria-selected="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('')+'</div><main id="m"></main>';
+  +[['products','المنتجات'],['settings','الإعدادات'],['home','الرئيسية'],['wheel','العجلة'],['tryon','تجربة اللون'],['pages','الصفحات'],['offers','العروض'],['coupons','الكوبونات']].map(function(t){return '<button role="tab" data-tab="'+t[0]+'" aria-selected="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('')+'</div><main id="m"></main>';
  var ob=document.getElementById('out');if(ob)ob.onclick=function(){S.tok=null;S.ref=null;save();loginView()};
  [].forEach.call(root.querySelectorAll('[data-tab]'),function(b){b.onclick=function(){S.tab=b.dataset.tab;render()}});
- ({products:productsView,settings:settingsView,pages:function(){pagesView()},home:homeView,wheel:wheelView,offers:offersView,coupons:couponsView})[S.tab]();
+ ({products:productsView,settings:settingsView,pages:function(){pagesView()},home:homeView,wheel:wheelView,tryon:tryonView,offers:offersView,coupons:couponsView})[S.tab]();
 }
 /* ---------- products ---------- */
 function stockOf(p){return (p.store_variants||[]).reduce(function(n,v){return n+((v.stock&&v.stock.qty)||0)},0)}
@@ -199,6 +199,45 @@ function homeView(){
    t.disabled=true;api('/rest/v1/store_settings?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:[{key:'home',value:H,public:true}]}).then(function(){S.settings.home=JSON.parse(JSON.stringify(H));msg('اتحفظت الرئيسية')}).catch(function(e){msg('ما اتحفظش: '+e.message,true)}).then(function(){t.disabled=false});
   }
   else if(t.id==='hreset'){if(!confirm('ترجيع الرئيسية للافتراضي؟'))return;api('/rest/v1/store_settings?key=eq.home',{method:'DELETE',headers:{Prefer:'return=minimal'}}).then(function(){delete S.settings.home;msg('رجعت الافتراضية');homeView()}).catch(function(e){msg(e.message,true)})}
+ };
+ paint();
+}
+/* ---------- virtual try-on colours ---------- */
+var TRY_DEF=[['Siri Green','أخضر'],['Siri Blue','أزرق'],['Siri Gray','رمادي'],['Siri Brown','بني'],['Siri Crown Brown','كراون بني'],['Siri Latte','لاتيه'],['Siri Hazy Gray','هيزي رمادي'],['Siri Crown Gray','كراون رمادي'],['Siri Rainbow Blue','رينبو أزرق'],['Siri Crown Green','كراون أخضر']];
+function tryDefaults(){return TRY_DEF.map(function(d,i){return {name:d[1],en:d[0],img:'img/tryon/siri-'+(i<9?'0':'')+(i+1)+'.webp'}})}
+function timg(file){
+ return createImageBitmap(file).then(function(bm){var r=Math.min(1,512/Math.max(bm.width,bm.height)),c=document.createElement('canvas');c.width=Math.round(bm.width*r);c.height=Math.round(bm.height*r);c.getContext('2d').drawImage(bm,0,0,c.width,c.height);return new Promise(function(ok){c.toBlob(ok,'image/webp',0.92)})})
+  .then(function(b){var path='tryon/'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.webp';return api('/storage/v1/object/'+BUCKET+'/'+path,{method:'POST',headers:{'Content-Type':'image/webp','x-upsert':'false'},body:b}).then(function(){return URL+'/storage/v1/object/public/'+BUCKET+'/'+path})});
+}
+function tryonView(){
+ var m=document.getElementById('m'),saved=S.settings.tryon&&S.settings.tryon.items&&S.settings.tryon.items.length,T=JSON.parse(JSON.stringify(saved?S.settings.tryon.items:tryDefaults())),vs=wvariants();
+ function pv(u){return /^https?:/.test(u)?u:'assets/'+u}
+ function paint(){
+  var h='<h2>تجربة اللون</h2><p class="hint" style="max-width:780px;color:#6a5662">الألوان اللي بتظهر للزائرة في صفحة "جرّبي اللون". كل لون ليه صورة العدسة نفسها (البؤبؤ الملوّن، صورة مربعة بخلفية شفافة أو بيضاء، يفضل 256×256 أو أكتر). اربطي كل لون بمنتج عشان يظهر زرار "أضيفي للسلة". الألوان الافتراضية (Siri) بتتربط تلقائي بالاسم، ولو الاسم مختلف اربطيها بإيدك.'+(saved?'':' <b>دي الألوان الافتراضية. أول ما تحفظي هتبقى هي المعتمدة.</b>')+'</p>';
+  h+='<div class="card" style="display:grid;gap:10px">'+T.map(function(it,i){
+   var sel='<select data-t="'+i+'.variant"><option value="">'+(it.en?'تلقائي (بالاسم)':'بدون ربط')+'</option>'+vs.map(function(v){return '<option value="'+v[0]+'"'+(String(it.variant)===String(v[0])?' selected':'')+'>'+esc(v[1])+'</option>'}).join('')+'</select>';
+   return '<div style="display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:center;border:1px solid #e6d9e0;border-radius:12px;padding:10px"><img src="'+esc(it.img?pv(it.img):'')+'" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;background:#efe7ec">'
+    +'<div style="display:grid;gap:6px"><label>الاسم<input data-t="'+i+'.name" value="'+esc(it.name||'')+'" maxlength="30"></label><label>الربط بمنتج'+sel+'</label><label>صورة العدسة<input type="file" accept="image/*" data-tup="'+i+'"></label><div><button type="button" class="btn sm alt" data-trm="'+i+'">حذف اللون</button></div></div></div>';
+  }).join('')+'<div><button type="button" class="btn alt" id="tradd">+ إضافة لون</button></div></div>';
+  h+='<div style="display:flex;gap:10px;margin-top:12px"><button class="btn" id="trsave">حفظ</button><button class="btn alt" id="trreset">رجّعي الافتراضي</button></div>';
+  m.innerHTML=h;
+ }
+ m.onchange=function(ev){
+  var t=ev.target;
+  if(t.dataset.tup!=null){var f=t.files[0];if(!f)return;t.disabled=true;timg(f).then(function(u){T[+t.dataset.tup].img=u;paint()}).catch(function(e){msg('فشل رفع الصورة: '+e.message,true);t.disabled=false});return}
+  if(t.dataset.t){var a=t.dataset.t.split('.');T[+a[0]][a[1]]=a[1]==='variant'?(t.value?+t.value:null):t.value.trim()}
+ };
+ m.onclick=function(ev){
+  var t=ev.target.closest('button');if(!t)return;
+  if(t.id==='tradd'){T.push({name:'',img:''});paint()}
+  else if(t.dataset.trm!=null){T.splice(+t.dataset.trm,1);paint()}
+  else if(t.id==='trsave'){
+   if(!T.length)return msg('ضيفي لون واحد على الأقل، أو دوسي "رجّعي الافتراضي".',true);
+   var bad=T.some(function(x){return !x.img||!x.name});if(bad)return msg('كل لون محتاج اسم وصورة.',true);
+   var items=T.map(function(x){var o={name:x.name,img:x.img};if(x.en)o.en=x.en;if(x.variant)o.variant=x.variant;return o});
+   t.disabled=true;api('/rest/v1/store_settings?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:[{key:'tryon',value:{items:items},public:true}]}).then(function(){S.settings.tryon={items:items};msg('اتحفظت ألوان التجربة')}).catch(function(e){msg('ما اتحفظش: '+e.message,true)}).then(function(){t.disabled=false});
+  }
+  else if(t.id==='trreset'){if(!confirm('ترجيع ألوان التجربة للافتراضي (Siri)؟'))return;api('/rest/v1/store_settings?key=eq.tryon',{method:'DELETE',headers:{Prefer:'return=minimal'}}).then(function(){delete S.settings.tryon;msg('رجعت الافتراضية');tryonView()}).catch(function(e){msg(e.message,true)})}
  };
  paint();
 }
