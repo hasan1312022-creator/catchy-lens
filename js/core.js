@@ -32,7 +32,7 @@ CL.unitPrice=function(p,it){
 };
 CL.rewardText=function(o,P){
  var m={shipping:'شحن مجاني',percent:'خصم '+o.value+'%',amount:'خصم '+CL.num(o.value)+' ج.م',fixed_price:'السعر '+CL.num(o.value)+' ج.م',gift_lens:'عدسة هدية'};
- if(o.reward==='gift'){var g=(P||[]).filter(function(x){return x.id===o.giftVariantId})[0];return (g?(g.fullName||g.name)+' '+g.name:'هدية')+' هدية'}
+ if(o.reward==='gift'){var g=(P||[]).filter(function(x){return x.id===o.giftVariantId})[0];return (g?(g.fullName&&g.fullName!==g.name?g.fullName+' ':'')+g.name:'هدية')+' هدية'}
  return m[o.reward]||'';
 };
 /* L = [{p:card,it:cartItem,ok:bool}] ; returns {offer,disc,free,gift,pickGift,hint} */

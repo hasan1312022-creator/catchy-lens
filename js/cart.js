@@ -26,7 +26,7 @@ function offerBox(){
   h+='<div class="offerbox on"><b>'+e(E.offer.name)+'</b>';
   if(E.free)h+='<span>الشحن مجاني</span>';
   else if(E.disc)h+='<span>وفّرتي '+CL.money(E.disc)+'</span>';
-  else if(E.gift)h+='<span>هدية: '+e(E.gift.fullName?E.gift.fullName+' '+E.gift.name:E.gift.name)+'</span>';
+  else if(E.gift)h+='<span>هدية: '+e(E.gift.fullName&&E.gift.fullName!==E.gift.name?E.gift.fullName+' '+E.gift.name:E.gift.name)+'</span>';
   else if(E.pickGift){var opts=giftOpts(E.offer),sel=giftSel(E.offer);
    h+='<label>اختاري لون العدسة الهدية<select id="gsel"><option value="">اختاري</option>'+opts.map(function(x){return '<option value="'+x.id+'"'+(sel&&sel.id===x.id?' selected':'')+'>'+e(x.brand+' - '+x.name)+'</option>'}).join('')+'</select></label>'}
   h+='</div>';
