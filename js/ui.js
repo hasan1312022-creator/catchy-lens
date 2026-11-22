@@ -26,7 +26,7 @@ CL.ui={
   var fl=[soc.filter(function(x){return x[1]==='instagram'})[0],soc.filter(function(x){return x[1]==='facebook'})[0]].filter(Boolean).map(function(x){return '<a class="fl" href="'+e(x[2])+'" target="_blank" rel="noopener" aria-label="'+x[0]+'">'+SOC[x[1]]+'</a>'}).join('');
   var floaters=(fl||wl)?'<div class="floaters">'+fl+(wl?'<a class="wa" href="'+wl+'" target="_blank" rel="noopener" aria-label="واتساب">'+I('chat')+'</a>':'')+'</div>':'';
   function col(h,l){return '<div><h3>'+h+'</h3>'+l.map(function(x){return '<a href="'+U[x[1]]+'">'+x[0]+'</a>'}).join('')+'</div>'}
-  return '<footer class="footer"><div class="wrap"><div class="footgrid"><div>'+img('logo.svg','Catchy Lens')+'<p><bdi dir="ltr">Your Eyes. Your Magic.</bdi></p><small>عدسات وألوان... بطريقتك.</small></div>'+col('اكتشفي',[['كل المنتجات','catalog'],['الماركات','brands'],['اعثري على عدستك','quiz'],['المفضلة','wishlist'],['من نحن','about'],['العروض','offers'],['جرّبي اللون','tryon']])+col('نساعدك',[['تتبعي طلبك','tracking'],['الأسئلة الشائعة','faq'],['الشحن','shipping'],['الاستبدال والاسترجاع','returns'],['الخصوصية','privacy'],['الشروط','terms'],['تواصلي معانا','contact']])+'</div>'+social+'<div class="copyright">© Catchy Lens</div></div></footer>'+floaters;
+  return '<footer class="footer"><div class="wrap"><div class="footgrid"><div>'+img('logo.svg','Catchy Lens')+'<p><bdi dir="ltr">Your Eyes. Your Magic.</bdi></p><small>عدسات وألوان... بطريقتك.</small></div>'+col('اكتشفي',[['كل المنتجات','catalog'],['الماركات','brands'],['اعثري على عدستك','quiz'],['المفضلة','wishlist'],['من نحن','about'],['العروض','offers'],['جرّبي اللون','tryon']])+col('نساعدك',[['تتبعي طلبك','tracking'],['الأسئلة الشائعة','faq'],['الشحن','shipping'],['الاستبدال والاسترجاع','returns'],['الخصوصية','privacy'],['الشروط','terms'],['تواصلي معانا','contact']])+'</div>'+social+'<div class="copyright">© Catchy Lens</div></div></footer>'+floaters+'<button type="button" class="as-launch" data-asst aria-label="المساعد">'+I('chat')+'<span>اسألي مساعدنا</span></button>';
  },
  card:function(p){
   var d=CL.dims[p.image]||[],disc=p.oldPrice&&p.price&&p.oldPrice>p.price?Math.round((1-p.price/p.oldPrice)*100):0,href=U.product(p);
@@ -72,6 +72,7 @@ CL.ui={
    if(dr&&!dr.hidden&&t===dr){dr.hidden=true;return}
    var w=t.closest('[data-wish]');if(w){var on=CL.wish.toggle(+w.dataset.wish);w.classList.toggle('selected',on);w.setAttribute('aria-pressed',on);CL.toast(on?'اتضافت للمفضلة':'اتشالت من المفضلة');return}
    var a=t.closest('[data-add]');if(a){var p=byId(a.dataset.add);if(!p)return;if(p.powerType==='both'){self.sheet(p)}else{CL.cart.add({id:p.id,slug:p.slug,plano:true,q:1});CL.toast('اتضافت للسلة')}return}
+   var as=t.closest('[data-asst]');if(as){var go=function(){CL.assistant.open()};if(CL.assistant)go();else{var sc=document.createElement('script');sc.src=CL.config.base+'js/assistant.js?v=1';sc.onload=go;document.head.appendChild(sc)}return}
    var qv=t.closest('[data-qv]');if(qv){if(ev.ctrlKey||ev.metaKey||ev.shiftKey||ev.button)return;var qp=byId(qv.dataset.qv);if(qp){ev.preventDefault();self.sheet(qp,true)}return}
    var sh=t.closest('[data-sheet]');if(!sh)return;
    var sw=t.closest('[data-sw]');if(sw){var np=byId(sw.dataset.sw);if(np){var k=LAST;sh.remove();self.sheet(np,true);LAST=k}return}
@@ -101,5 +102,5 @@ CL.ui={
   });
  }
 };
-self2=CL.ui;
+self2=CL.ui;CL.ui.data=function(){return {S:S,P:PRODUCTS}};
 })();
