@@ -55,23 +55,66 @@ function speak(h){
  browserSpeak(chunksOf(txt,150))
 }
 function stopAll(){seq++;if(AU){try{AU.pause()}catch(x){}}if(TTS)TTS.cancel();if(rec&&listening){try{rec.stop()}catch(x){}}}
+var userStop=false,recMode=false,rst=null;
+function sttUrl(){var c=CL.config||{};return c.stt===false?'':(c.sttUrl||(c.supabaseUrl?c.supabaseUrl+'/functions/v1/stt':''))}
+function canRec(){return !!(sttUrl()&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&(window.AudioContext||window.webkitAudioContext))}
+function wavOf(chunks,rate){
+ var n=0,o=0,i,j;chunks.forEach(function(c){n+=c.length});var all=new Float32Array(n);chunks.forEach(function(c){all.set(c,o);o+=c.length});
+ var pk=0;for(i=0;i<all.length;i++){var a=Math.abs(all[i]);if(a>pk)pk=a}
+ var g=pk>0.005?Math.min(8,0.85/pk):1,ratio=rate/16000,len=Math.floor(all.length/ratio),buf=new ArrayBuffer(44+len*2),d=new DataView(buf);
+ function w(q,t){for(var k=0;k<t.length;k++)d.setUint8(q+k,t.charCodeAt(k))}
+ w(0,'RIFF');d.setUint32(4,36+len*2,true);w(8,'WAVE');w(12,'fmt ');d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);d.setUint32(24,16000,true);d.setUint32(28,32000,true);d.setUint16(32,2,true);d.setUint16(34,16,true);w(36,'data');d.setUint32(40,len*2,true);
+ for(i=0;i<len;i++){var a0=Math.floor(i*ratio),b0=Math.min(all.length,Math.max(a0+1,Math.floor((i+1)*ratio))),sum=0;for(j=a0;j<b0;j++)sum+=all[j];var v=sum/(b0-a0)*g;v=Math.max(-1,Math.min(1,v));d.setInt16(44+i*2,v<0?v*32768:v*32767,true)}
+ return buf}
 function micToggle(){
  var inp=box.querySelector('.as-in input'),mic=box.querySelector('.as-mic');
  function idle(){listening=false;mic.classList.remove('on');inp.placeholder='اكتبي سؤالك...'}
- if(listening){try{rec.stop()}catch(x){}return}
+ if(listening){if(recMode){if(rst)rst.stop()}else{userStop=true;try{rec.stop()}catch(x){}}return}
  stopAll();
- var final='',started=false,failed=false,wd=null;
+ userStop=false;var final='',started=false,failed=false,wd=null;
  function fail(m){if(failed)return;failed=true;clearTimeout(wd);idle();say(m)}
- try{rec=new SR()}catch(x){return fail('المتصفح ده مش بيدعم التسجيل الصوتي. اكتبي سؤالك وهرد عليكي.')}
+
+ function rfail(m){recMode=false;rst=null;idle();say(m)}
+ function recStart(){
+  recMode=true;listening=true;mic.classList.add('on');inp.placeholder='بسمعك... اتكلمي';
+  navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}}).then(function(stream){
+   var AC=window.AudioContext||window.webkitAudioContext,cx=new AC(),src=cx.createMediaStreamSource(stream),pr=cx.createScriptProcessor(4096,1,1),mu=cx.createGain(),chunks=[],heard=false,done=false,t0=Date.now(),last=0,nf=0,nn=0,TH=0.02;
+   mu.gain.value=0;try{cx.resume()}catch(x){}
+   function clean(){try{stream.getTracks().forEach(function(t){t.stop()})}catch(x){}try{pr.disconnect();src.disconnect()}catch(x){}try{cx.close()}catch(x){}}
+   function finish(){
+    if(done)return;done=true;clean();
+    if(!heard){recMode=false;rst=null;idle();if(Date.now()-t0>3000)say('ما سمعتش صوت. جرّبي تاني وقرّبي من الميكروفون، أو اكتبي سؤالك.');return}
+    recMode=false;rst=null;listening=false;mic.classList.remove('on');inp.placeholder='بفهم كلامك...';
+    var rate=cx.sampleRate;
+    fetch(sttUrl(),{method:'POST',headers:{'content-type':'audio/wav',apikey:(CL.config||{}).anonKey||''},body:new Blob([wavOf(chunks,rate)],{type:'audio/wav'})}).then(function(r){
+     if(r.status===429){try{localStorage.removeItem('cl-rec')}catch(x){}throw new Error('quota')}
+     if(!r.ok)throw new Error('http '+r.status);return r.json()}).then(function(j){
+     idle();var t=(j&&j.text||'').trim();
+     if(!t){say('ما فهمتش الكلام. جرّبي تاني بصوت أوضح أو اكتبي سؤالك.');return}
+     viaVoice=true;send(t)}).catch(function(x){idle();say(x&&x.message==='quota'?'خاصية الصوت وصلت للحد الشهري. اكتبي سؤالك وهرد عليكي.':'تعذر فهم الصوت دلوقتي. اكتبي سؤالك وهرد عليكي.')})}
+   rst={stop:finish};
+   pr.onaudioprocess=function(e){
+    var x=e.inputBuffer.getChannelData(0),sq=0,i;chunks.push(new Float32Array(x));for(i=0;i<x.length;i++)sq+=x[i]*x[i];
+    var rms=Math.sqrt(sq/x.length),now=Date.now();
+    if(now-t0<400){nf+=rms;nn++;TH=Math.max(0.02,(nf/nn)*3);return}
+    if(rms>TH){heard=true;last=now}
+    if(heard&&now-last>1300)finish();else if(!heard&&now-t0>7000)finish();else if(now-t0>15000)finish()};
+   src.connect(pr);pr.connect(mu);mu.connect(cx.destination)
+  }).catch(function(x){var n=x&&x.name;rfail(n==='NotAllowedError'||n==='SecurityError'?'محتاجة تسمحي للمتصفح بالميكروفون: اضغطي على القفل جنب عنوان الموقع ← الأذونات ← الميكروفون ← سماح، وبعدها جرّبي تاني.':(n==='NotFoundError'?'مفيش ميكروفون متاح على الجهاز ده. اكتبي سؤالك وهرد عليكي.':'تعذر تشغيل الميكروفون. اكتبي سؤالك وهرد عليكي.'))})
+ }
+ function alt(m){if(failed)return;if(canRec()){failed=true;clearTimeout(wd);idle();try{localStorage.setItem('cl-rec','1')}catch(x){}recStart();return}fail(m)}
+ var pref=false;try{pref=localStorage.getItem('cl-rec')==='1'}catch(x){}
+ if(canRec()&&(!SR||pref))return recStart();
+ try{rec=new SR()}catch(x){return alt('المتصفح ده مش بيدعم التسجيل الصوتي. اكتبي سؤالك وهرد عليكي.')}
  rec.lang='ar-EG';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
  rec.onstart=function(){started=true;clearTimeout(wd);listening=true;mic.classList.add('on');inp.placeholder='بسمعك... اتكلمي'};
  rec.onresult=function(ev){started=true;var t='';for(var k=0;k<ev.results.length;k++){t+=ev.results[k][0].transcript;if(ev.results[k].isFinal)final=t}inp.value=t};
- rec.onerror=function(ev){var c=ev&&ev.error;if(c==='aborted')return;
+ rec.onerror=function(ev){var c=ev&&ev.error;if(c==='aborted'){if(!final&&!userStop)alt('التسجيل الصوتي اتقفل فجأة على الجهاز ده (خدمة التعرف على الصوت مش شغالة). جرّبي تفعّلي «الكتابة الصوتية» في لوحة مفاتيح Google أو اكتبي سؤالك وهرد عليكي بالصوت.');return}
   var m={'not-allowed':'محتاجة تسمحي للمتصفح بالميكروفون: اضغطي على القفل جنب عنوان الموقع ← الأذونات ← الميكروفون ← سماح. وممكن تكتبي سؤالك عادي.','service-not-allowed':'خدمة التعرف على الصوت مقفولة على الجهاز ده. فعّلي «خدمات Google» أو اكتبي سؤالك.','no-speech':'ما سمعتش حاجة. جرّبي تاني وقربي من الميكروفون، أو اكتبي سؤالك.','audio-capture':'ما قدرتش أوصل للميكروفون. اتأكدي إنه شغال وإن تطبيق تاني مش مستخدمه.','network':'التعرف على الصوت محتاج إنترنت. اتأكدي من الاتصال وجرّبي تاني.','language-not-supported':'لغة التعرف على الصوت العربي مش متاحة على الجهاز ده.'}[c];
-  fail(m||('حصلت مشكلة في الميكروفون ('+(c||'؟')+'). اكتبي سؤالك وهرد عليكي.'))};
- rec.onend=function(){clearTimeout(wd);var was=listening||started;idle();if(failed)return;var t=(final||inp.value||'').trim();if(t){inp.value='';viaVoice=true;send(t)}else if(!was){fail('الميكروفون ما استجابش. جرّبي تاني أو اكتبي سؤالك.')}};
- wd=setTimeout(function(){if(!started){try{rec.abort()}catch(x){}fail('الميكروفون ما بدأش. اتأكدي إنك سمحتي للموقع بالميكروفون في إعدادات المتصفح، وإن خدمات Google شغالة، أو اكتبي سؤالك.')}},15000);
- try{rec.start()}catch(x){fail('تعذر تشغيل الميكروفون ('+(x&&x.name||'خطأ')+'). اكتبي سؤالك وهرد عليكي.')}
+  if(c==='not-allowed'||!canRec())fail(m||('حصلت مشكلة في الميكروفون ('+(c||'؟')+'). اكتبي سؤالك وهرد عليكي.'));else alt('')};
+ rec.onend=function(){clearTimeout(wd);if(failed)return;var was=listening||started;idle();var t=(final||inp.value||'').trim();if(t){inp.value='';viaVoice=true;send(t)}else if(!was){alt('الميكروفون ما استجابش. جرّبي تاني أو اكتبي سؤالك.')}};
+ wd=setTimeout(function(){if(!started){try{rec.abort()}catch(x){}alt('الميكروفون ما بدأش. اتأكدي إنك سمحتي للموقع بالميكروفون في إعدادات المتصفح، وإن خدمات Google شغالة، أو اكتبي سؤالك.')}},15000);
+ try{rec.start()}catch(x){alt('تعذر تشغيل الميكروفون ('+(x&&x.name||'خطأ')+'). اكتبي سؤالك وهرد عليكي.')}
 }
 
 function me(t){msgs.push({b:0,h:e(t)});draw()}
@@ -190,7 +233,7 @@ function send(t,v){t=String(t||'').trim();if(!t)return;if(!v&&!viaVoice)viaVoice
 function open(){
  if(box){box.hidden=false;return}
  box=document.createElement('section');box.className='as';box.setAttribute('role','dialog');box.setAttribute('aria-label',BOT);
- box.innerHTML='<header><b>'+BOT+'</b><span>بنرد فورًا · v2.4</span>'+((TTS||ttsUrl())?'<button type="button" data-asv class="as-spk" aria-pressed="false" title="الصوت مقفول"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></button>':'')+'<button type="button" data-asx aria-label="إغلاق">'+I('close')+'</button></header><div class="as-msgs" aria-live="polite"></div><form class="as-in">'+(SR?'<button type="button" class="as-mic" aria-label="اتكلمي" title="اتكلمي"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>':'')+'<input type="text" placeholder="اكتبي سؤالك..." autocomplete="off" aria-label="اكتبي سؤالك"><button type="submit" aria-label="إرسال">'+I('chat')+'</button></form>';
+ box.innerHTML='<header><b>'+BOT+'</b><span>بنرد فورًا · v2.6</span>'+((TTS||ttsUrl())?'<button type="button" data-asv class="as-spk" aria-pressed="false" title="الصوت مقفول"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></button>':'')+'<button type="button" data-asx aria-label="إغلاق">'+I('close')+'</button></header><div class="as-msgs" aria-live="polite"></div><form class="as-in">'+((SR||canRec())?'<button type="button" class="as-mic" aria-label="اتكلمي" title="اتكلمي"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>':'')+'<input type="text" placeholder="اكتبي سؤالك..." autocomplete="off" aria-label="اكتبي سؤالك"><button type="submit" aria-label="إرسال">'+I('chat')+'</button></form>';
  document.body.appendChild(box);
  box.addEventListener('click',function(ev){var t=ev.target,c=t.closest&&t.closest('[data-ac]');if(c){send(c.dataset.ac);return}if(t.closest&&t.closest('[data-asx]'))box.hidden=true});
  box.querySelector('form').addEventListener('submit',function(ev){ev.preventDefault();unlock();var i=ev.target.querySelector('input');viaVoice=false;send(i.value);i.value=''});
