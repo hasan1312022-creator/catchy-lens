@@ -72,7 +72,7 @@ CL.ui={
    if(dr&&!dr.hidden&&t===dr){dr.hidden=true;return}
    var w=t.closest('[data-wish]');if(w){var on=CL.wish.toggle(+w.dataset.wish);w.classList.toggle('selected',on);w.setAttribute('aria-pressed',on);CL.toast(on?'اتضافت للمفضلة':'اتشالت من المفضلة');return}
    var a=t.closest('[data-add]');if(a){var p=byId(a.dataset.add);if(!p)return;if(p.powerType==='both'){self.sheet(p)}else{CL.cart.add({id:p.id,slug:p.slug,plano:true,q:1});CL.toast('اتضافت للسلة')}return}
-   var as=t.closest('[data-asst]');if(as){var go=function(){CL.assistant.open()};if(CL.assistant)go();else{var sc=document.createElement('script');sc.src=CL.config.base+'js/assistant.js?v=23';sc.onload=go;document.head.appendChild(sc)}return}
+   var as=t.closest('[data-asst]');if(as){var go=function(){CL.assistant.open()};if(CL.assistant)go();else{var sc=document.createElement('script');sc.src=CL.config.base+'js/assistant.js?v=24';sc.onload=go;document.head.appendChild(sc)}return}
    var qv=t.closest('[data-qv]');if(qv){if(ev.ctrlKey||ev.metaKey||ev.shiftKey||ev.button)return;var qp=byId(qv.dataset.qv);if(qp){ev.preventDefault();self.sheet(qp,true)}return}
    var sh=t.closest('[data-sheet]');if(!sh)return;
    var sw=t.closest('[data-sw]');if(sw){var np=byId(sw.dataset.sw);if(np){var k=LAST;sh.remove();self.sheet(np,true);LAST=k}return}
