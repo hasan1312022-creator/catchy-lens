@@ -57,16 +57,23 @@ function speak(h){
 function stopAll(){seq++;if(AU){try{AU.pause()}catch(x){}}if(TTS)TTS.cancel();if(rec&&listening){try{rec.stop()}catch(x){}}}
 function micToggle(){
  var inp=box.querySelector('.as-in input'),mic=box.querySelector('.as-mic');
+ function idle(){listening=false;mic.classList.remove('on');inp.placeholder='اكتبي سؤالك...'}
  if(listening){try{rec.stop()}catch(x){}return}
- if(TTS)TTS.cancel();
- rec=new SR();rec.lang='ar-EG';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
- var final='';
- rec.onstart=function(){listening=true;mic.classList.add('on');inp.placeholder='بسمعك... اتكلمي'};
- rec.onresult=function(ev){var t='';for(var i=0;i<ev.results.length;i++){t+=ev.results[i][0].transcript;if(ev.results[i].isFinal)final=t}inp.value=t};
- rec.onerror=function(ev){listening=false;mic.classList.remove('on');inp.placeholder='اكتبي سؤالك...';if(ev.error==='not-allowed'||ev.error==='service-not-allowed')say('محتاجة تسمحي للمتصفح بالميكروفون عشان أسمعك. وممكن تكتبي سؤالك عادي.');else if(ev.error==='no-speech')say('ما سمعتش حاجة. جرّبي تاني أو اكتبي سؤالك.')};
- rec.onend=function(){listening=false;mic.classList.remove('on');inp.placeholder='اكتبي سؤالك...';var t=(final||inp.value||'').trim();if(t){inp.value='';viaVoice=true;send(t)}};
- try{rec.start()}catch(x){listening=false}
+ stopAll();
+ var final='',started=false,failed=false,wd=null;
+ function fail(m){if(failed)return;failed=true;clearTimeout(wd);idle();say(m)}
+ try{rec=new SR()}catch(x){return fail('المتصفح ده مش بيدعم التسجيل الصوتي. اكتبي سؤالك وهرد عليكي.')}
+ rec.lang='ar-EG';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
+ rec.onstart=function(){started=true;clearTimeout(wd);listening=true;mic.classList.add('on');inp.placeholder='بسمعك... اتكلمي'};
+ rec.onresult=function(ev){started=true;var t='';for(var k=0;k<ev.results.length;k++){t+=ev.results[k][0].transcript;if(ev.results[k].isFinal)final=t}inp.value=t};
+ rec.onerror=function(ev){var c=ev&&ev.error;if(c==='aborted')return;
+  var m={'not-allowed':'محتاجة تسمحي للمتصفح بالميكروفون: اضغطي على القفل جنب عنوان الموقع ← الأذونات ← الميكروفون ← سماح. وممكن تكتبي سؤالك عادي.','service-not-allowed':'خدمة التعرف على الصوت مقفولة على الجهاز ده. فعّلي «خدمات Google» أو اكتبي سؤالك.','no-speech':'ما سمعتش حاجة. جرّبي تاني وقربي من الميكروفون، أو اكتبي سؤالك.','audio-capture':'ما قدرتش أوصل للميكروفون. اتأكدي إنه شغال وإن تطبيق تاني مش مستخدمه.','network':'التعرف على الصوت محتاج إنترنت. اتأكدي من الاتصال وجرّبي تاني.','language-not-supported':'لغة التعرف على الصوت العربي مش متاحة على الجهاز ده.'}[c];
+  fail(m||('حصلت مشكلة في الميكروفون ('+(c||'؟')+'). اكتبي سؤالك وهرد عليكي.'))};
+ rec.onend=function(){clearTimeout(wd);var was=listening||started;idle();if(failed)return;var t=(final||inp.value||'').trim();if(t){inp.value='';viaVoice=true;send(t)}else if(!was){fail('الميكروفون ما استجابش. جرّبي تاني أو اكتبي سؤالك.')}};
+ wd=setTimeout(function(){if(!started){try{rec.abort()}catch(x){}fail('الميكروفون ما بدأش. اتأكدي إنك سمحتي للموقع بالميكروفون في إعدادات المتصفح، وإن خدمات Google شغالة، أو اكتبي سؤالك.')}},15000);
+ try{rec.start()}catch(x){fail('تعذر تشغيل الميكروفون ('+(x&&x.name||'خطأ')+'). اكتبي سؤالك وهرد عليكي.')}
 }
+
 function me(t){msgs.push({b:0,h:e(t)});draw()}
 function waLink(){var last=msgs.filter(function(m){return !m.b}).slice(-3).map(function(m){return m.h.replace(/&[a-z#0-9]+;/g,' ')}).join(' / ');return wa('أهلاً، كنت بكلم مساعد الموقع'+(last?' وسألت: '+last:'')+' وعايزة أتكلم مع حد.')}
 function handoff(){var l=waLink();return l?'<a class="btn alt as-wa" href="'+l+'" target="_blank" rel="noopener">كلمي فريقنا على واتساب</a>':''}
@@ -187,7 +194,7 @@ function open(){
  document.body.appendChild(box);
  box.addEventListener('click',function(ev){var t=ev.target,c=t.closest&&t.closest('[data-ac]');if(c){send(c.dataset.ac);return}if(t.closest&&t.closest('[data-asx]'))box.hidden=true});
  box.querySelector('form').addEventListener('submit',function(ev){ev.preventDefault();unlock();var i=ev.target.querySelector('input');viaVoice=false;send(i.value);i.value=''});
- box.addEventListener('click',function(ev){var t=ev.target;unlock();if(t.closest&&t.closest('.as-mic'))micToggle();var sp=t.closest&&t.closest('[data-asv]');if(sp){voiceOn=!voiceOn;try{CL.store.set('cl-voice',voiceOn)}catch(x){}sp.classList.toggle('on',voiceOn);sp.setAttribute('aria-pressed',voiceOn);sp.title=voiceOn?'الصوت شغال':'الصوت مقفول';if(!voiceOn&&TTS)TTS.cancel();else if(voiceOn)speak('تمام، هرد عليكي بالصوت')}if(t.closest&&t.closest('[data-asx]')){stopAll()}});
+ box.addEventListener('click',function(ev){var t=ev.target,isMic=t.closest&&t.closest('.as-mic');if(!isMic)unlock();if(isMic)micToggle();var sp=t.closest&&t.closest('[data-asv]');if(sp){voiceOn=!voiceOn;try{CL.store.set('cl-voice',voiceOn)}catch(x){}sp.classList.toggle('on',voiceOn);sp.setAttribute('aria-pressed',voiceOn);sp.title=voiceOn?'الصوت شغال':'الصوت مقفول';if(!voiceOn&&TTS)TTS.cancel();else if(voiceOn)speak('تمام، هرد عليكي بالصوت')}if(t.closest&&t.closest('[data-asx]')){stopAll()}});
  say('أهلاً بيكي في Catchy Lens! أنا '+BOT+'. أقدر أرشّحلك لون من المتاح دلوقتي، أجاوبك عن الشحن والاسترجاع، أو أتابع طلبك.',{chips:MENU});
 }
 CL.assistant={open:function(){var d=CL.ui.data();S=d.S||{};P=d.P||[];try{CL.data.offers().then(function(o){OFF=o||[]})}catch(x){}try{voiceOn=false}catch(x){}open();if(TTS&&!VOICE){VOICE=pickVoice();if(TTS.onvoiceschanged!==undefined)TTS.onvoiceschanged=function(){VOICE=pickVoice()}}var i=box.querySelector('input');if(i)setTimeout(function(){i.focus()},50)}};
