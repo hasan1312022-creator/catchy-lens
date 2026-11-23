@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>فحص الميكروفون</title>
+<style>body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#fff8fa;color:#381a30}
+button{font-size:20px;padding:18px 24px;border:0;border-radius:14px;background:#381a30;color:#fff;width:100%;margin:8px 0}
+#log{white-space:pre-wrap;background:#fff;border:1px solid #ddc;border-radius:10px;padding:12px;min-height:200px;font-size:15px;line-height:1.7}
+#res{font-size:20px;margin:10px 0;min-height:30px}</style></head><body>
+<h2>فحص الميكروفون</h2>
+<p>اضغطي الزرار واتكلمي بالعربي. وابعتيلي صورة من الشاشة.</p>
+<button id="go">🎤 ابدأ الفحص</button>
+<div id="res"></div><div id="log"></div>
+<script>
+var L=document.getElementById('log'),R=document.getElementById('res');
+function log(m){L.textContent+=new Date().toLocaleTimeString()+'  '+m+'\n'}
+log('المتصفح: '+navigator.userAgent);
+log('https: '+(location.protocol==='https:'));
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+log('SpeechRecognition موجود: '+!!SR);
+log('speechSynthesis موجود: '+('speechSynthesis' in window));
+if(navigator.permissions&&navigator.permissions.query){navigator.permissions.query({name:'microphone'}).then(function(p){log('إذن الميكروفون: '+p.state);p.onchange=function(){log('إذن الميكروفون اتغير: '+p.state)}}).catch(function(e){log('تعذر قراءة الإذن: '+e)})}
+document.getElementById('go').onclick=function(){
+ log('--- ضغطت الزرار');
+ if(!SR){log('المتصفح مفيهوش التعرف على الصوت');return}
+ var r=new SR();r.lang='ar-EG';r.interimResults=true;r.continuous=false;
+ ['start','audiostart','soundstart','speechstart','speechend','soundend','audioend','end','nomatch'].forEach(function(n){r['on'+n]=function(){log('حدث: '+n)}});
+ r.onresult=function(e){var t='';for(var i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;R.textContent=t;log('نتيجة: '+t)};
+ r.onerror=function(e){log('خطأ: '+e.error+(e.message?' - '+e.message:''))};
+ try{r.start();log('start() اتنفذت من غير استثناء')}catch(x){log('start() رمت استثناء: '+x.name+' '+x.message)}
+};
+</script></body></html>
