@@ -182,8 +182,8 @@ function vupload(id,ev){
 /* ---------- home ---------- */
 var LINKS=[['catalog','كل المنتجات'],['offers','العروض'],['brands','الماركات'],['quiz','اعثري على عدستك'],['lenses','العدسات'],['care','محاليل'],['accessories','إكسسوارات']];
 var HB=[['quiz','بانر الاختبار'],['offers','بانر العروض'],['arrivals','بانر وصل حديثًا']];
-function himg(file){
- return createImageBitmap(file).then(function(bm){var r=Math.min(1,2400/Math.max(bm.width,bm.height)),c=document.createElement('canvas');c.width=Math.round(bm.width*r);c.height=Math.round(bm.height*r);c.getContext('2d').drawImage(bm,0,0,c.width,c.height);return new Promise(function(ok){c.toBlob(ok,'image/webp',0.85)})})
+function himg(file,flat){
+ return createImageBitmap(file).then(function(bm){var r=Math.min(1,2400/Math.max(bm.width,bm.height)),c=document.createElement('canvas');c.width=Math.round(bm.width*r);c.height=Math.round(bm.height*r);var cx=c.getContext('2d');if(flat){cx.fillStyle=flat;cx.fillRect(0,0,c.width,c.height)}cx.drawImage(bm,0,0,c.width,c.height);return new Promise(function(ok){c.toBlob(ok,'image/webp',0.9)})})
   .then(function(b){var path='home/'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.webp';return api('/storage/v1/object/'+BUCKET+'/'+path,{method:'POST',headers:{'Content-Type':'image/webp','x-upsert':'false'},body:b}).then(function(){return URL+'/storage/v1/object/public/'+BUCKET+'/'+path})});
 }
 function lsel(id,v){var has=LINKS.some(function(l){return l[0]===v});return '<select data-k="'+id+'">'+LINKS.map(function(l){return '<option value="'+l[0]+'"'+(l[0]===v?' selected':'')+'>'+esc(l[1])+'</option>'}).join('')+(v&&!has?'<option value="'+esc(v)+'" selected>'+esc(v)+'</option>':'')+'</select>'}
@@ -207,7 +207,7 @@ function homeView(){
  function ref(k){/* returns [obj,key] */var a=k.split('.');if(a[0]==='sl')return [H.slides[+a[1]],a[2]];if(a[0]==='bn')return [H[a[1]],a[2]];if(a[0]==='fm')return [H.film,a[1]];if(a[0]==='mo')return [H.moments[+a[1]],a[2]];if(a[0]==='bi')return [H.brandImg,BN[+a[1]]];}
  m.onchange=function(ev){
   var t=ev.target,r;
-  if(t.dataset.up){var f=t.files[0];if(!f)return;t.disabled=true;himg(f).then(function(u){r=ref(t.dataset.up);r[0][r[1]]=u;paint()}).catch(function(e){msg('فشل رفع الصورة: '+e.message,true);t.disabled=false});return}
+  if(t.dataset.up){var f=t.files[0];if(!f)return;t.disabled=true;himg(f,t.dataset.up.indexOf('bi.')===0?'#f1e4ee':null).then(function(u){r=ref(t.dataset.up);r[0][r[1]]=u;paint()}).catch(function(e){msg('فشل رفع الصورة: '+e.message,true);t.disabled=false});return}
   if(t.dataset.k){r=ref(t.dataset.k);r[0][r[1]]=t.value;return}
   var d=t.dataset;
   if(d.sl){var a=d.sl.split('.');H.slides[+a[0]][a[1]]=t.type==='checkbox'?t.checked:t.value}
