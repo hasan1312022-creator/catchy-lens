@@ -72,22 +72,26 @@ function render(){
  ({products:productsView,settings:settingsView,pages:function(){pagesView()},home:homeView,wheel:wheelView,tryon:tryonView,offers:offersView,coupons:couponsView,team:teamView})[S.tab]();
 }
 /* ---------- products ---------- */
+function swl(v){var r=SW.filter(function(x){return x[0]&&x[0]===v})[0];return r?r[1]:''}
+function qhay(p){return [p.name,p.brand].concat((p.store_variants||[]).map(function(v){return (v.color_label||'')+' '+swl(v.swatch)+' '+(v.swatch||'')})).join(' ').toLowerCase()}
+function qmatch(p){var h=qhay(p);return String(S.q).toLowerCase().split(/\s+/).filter(Boolean).every(function(w){return h.indexOf(w)>-1})}
+function qcolors(p){if(!S.q)return '';var ws=String(S.q).toLowerCase().split(/\s+/).filter(Boolean),pn=(p.name+' '+p.brand).toLowerCase();var m=(p.store_variants||[]).filter(function(v){var h=((v.color_label||'')+' '+swl(v.swatch)+' '+(v.swatch||'')).toLowerCase();return ws.some(function(w){return h.indexOf(w)>-1&&pn.indexOf(w)<0})}).map(function(v){return v.color_label});return m.length?'<br><small style="color:#7a4b6a">ألوان مطابقة: '+esc(m.join('، '))+'</small>':''}
 function stockOf(p){return (p.store_variants||[]).reduce(function(n,v){return n+(((v.stock||v.accessories)&&(v.stock||v.accessories).qty)||0)},0)}
 function filtered(){
  return S.products.filter(function(p){
-  if(S.q&&(p.name+' '+p.brand).indexOf(S.q)<0)return false;
+  if(S.q&&!qmatch(p))return false;
   if(S.flt==='active')return p.active;if(S.flt==='inactive')return !p.active;if(S.flt==='noprice')return !(p.price>0);return true;
  });
 }
 function rows(){
  return filtered().map(function(p){
   var nv=(p.store_variants||[]).length,noimg=(p.store_variants||[]).filter(function(v){return !(v.images&&v.images.length)}).length;
-  return '<tr data-id="'+p.id+'"><td><b>'+esc(p.name)+'</b><br><small>'+nv+' لون — مخزون '+stockOf(p)+'</small></td><td><select data-f="category"'+(can('details')?'':' disabled')+'>'+opts(CAT,p.category)+'</select></td><td><input data-f="price" type="number" min="0" step="1" value="'+(p.price||'')+'" aria-label="السعر"'+(can('prices')?'':' disabled')+'></td><td><input data-f="old_price" type="number" min="0" step="1" value="'+(p.old_price||'')+'" aria-label="السعر قبل الخصم"'+(can('prices')?'':' disabled')+'></td><td>'+(nv-noimg)+' / '+nv+' لون ليه صور</td><td><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-f="active"'+(p.active?' checked':'')+(can('visibility')?'':' disabled')+'><span class="tag '+(p.active?'on':'off')+'">'+(p.active?'ظاهر':'مخفي')+'</span></label></td><td><button class="btn sm alt" data-edit="'+p.id+'">تعديل</button> <button class="btn sm" data-save="'+p.id+'">حفظ</button></td></tr>';
+  return '<tr data-id="'+p.id+'"><td><b>'+esc(p.name)+'</b><br><small>'+nv+' لون — مخزون '+stockOf(p)+'</small>'+qcolors(p)+'</td><td><select data-f="category"'+(can('details')?'':' disabled')+'>'+opts(CAT,p.category)+'</select></td><td><input data-f="price" type="number" min="0" step="1" value="'+(p.price||'')+'" aria-label="السعر"'+(can('prices')?'':' disabled')+'></td><td><input data-f="old_price" type="number" min="0" step="1" value="'+(p.old_price||'')+'" aria-label="السعر قبل الخصم"'+(can('prices')?'':' disabled')+'></td><td>'+(nv-noimg)+' / '+nv+' لون ليه صور</td><td><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-f="active"'+(p.active?' checked':'')+(can('visibility')?'':' disabled')+'><span class="tag '+(p.active?'on':'off')+'">'+(p.active?'ظاهر':'مخفي')+'</span></label></td><td><button class="btn sm alt" data-edit="'+p.id+'">تعديل</button> <button class="btn sm" data-save="'+p.id+'">حفظ</button></td></tr>';
  }).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px">مفيش منتجات بالفلتر ده.</td></tr>';
 }
 function productsView(){
  var m=document.getElementById('m'),n=S.products.length,act=S.products.filter(function(p){return p.active}).length;
- m.innerHTML='<h2>المنتجات</h2><p style="margin:0 0 12px;color:#6a5662">'+n+' منتج، الظاهر منهم في الموقع: '+act+'. المنتج ما يظهرش غير لما يتحط له سعر وتفعّليه.</p><div class="tools"><input id="q" type="search" placeholder="ابحثي بالاسم أو الماركة" value="'+esc(S.q)+'"><select id="flt"><option value="all">الكل</option><option value="active">الظاهر</option><option value="inactive">المخفي</option><option value="noprice">من غير سعر</option></select></div><div class="tw"><table><thead><tr><th>المنتج</th><th>القسم</th><th>السعر (ج.م)</th><th>قبل الخصم</th><th>صور الألوان</th><th>الظهور</th><th></th></tr></thead><tbody id="tb">'+rows()+'</tbody></table></div>';
+ m.innerHTML='<h2>المنتجات</h2><p style="margin:0 0 12px;color:#6a5662">'+n+' منتج، الظاهر منهم في الموقع: '+act+'. المنتج ما يظهرش غير لما يتحط له سعر وتفعّليه.</p><div class="tools"><input id="q" type="search" placeholder="ابحثي بالاسم أو الماركة أو اللون" value="'+esc(S.q)+'"><select id="flt"><option value="all">الكل</option><option value="active">الظاهر</option><option value="inactive">المخفي</option><option value="noprice">من غير سعر</option></select></div><div class="tw"><table><thead><tr><th>المنتج</th><th>القسم</th><th>السعر (ج.م)</th><th>قبل الخصم</th><th>صور الألوان</th><th>الظهور</th><th></th></tr></thead><tbody id="tb">'+rows()+'</tbody></table></div>';
  document.getElementById('flt').value=S.flt;
  document.getElementById('q').oninput=function(e){S.q=e.target.value.trim();document.getElementById('tb').innerHTML=rows()};
  document.getElementById('flt').onchange=function(e){S.flt=e.target.value;document.getElementById('tb').innerHTML=rows()};
