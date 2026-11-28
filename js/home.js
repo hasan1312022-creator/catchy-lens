@@ -62,6 +62,7 @@ function banner(b,cls){
 }
 function home(P,C,S){
  var brands=S.brands&&S.brands.length?S.brands:(function(){var l=[],s={};P.forEach(function(p){if(!s[p.brand]){s[p.brand]=1;l.push({name:p.brand})}});return l})();
+ var BI=(S.home&&S.home.brandImg)||{};brands=brands.map(function(b){return {name:b.name,image:BI[b.name]||b.image||'img/lens-box.webp'}});
  var f=C.film||{};
  var cats=[['lenses','العدسات','lenses'],['care','محاليل وتعقيم','care'],['accessories','الإكسسوارات','accessories']];
  return '<div class="wrap">'+CL.ui.trust()
